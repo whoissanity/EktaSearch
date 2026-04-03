@@ -1,0 +1,2 @@
+# AIO-Search
+AIO Search (Beta) is a unified tech-shopping aggregator designed for the Bangladesh market. It crawls and indexes real-time data from major retailers like Star Tech, Techland, Tech Diversity, Vibe Gaming, Blisstyle, and PotakaIT. Instead of jumping between tabs, users can compare prices, check warranty details, and discover the widest range of PC components and peripherals across 10+ platforms in a single, streamlined interface.
