@@ -24,7 +24,9 @@ export default function ComparePage() {
     if (!q.trim()) return;
     setLoading(true);
     try {
-      const { data } = await axios.get("/api/compare", { params: { q } });
+      const { data } = await axios.get("/api/compare", {
+        params: { q, sort_by: "relevance" },
+      });
       setGroups(data.groups ?? []);
     } finally {
       setLoading(false);
@@ -35,14 +37,14 @@ export default function ComparePage() {
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
       <div>
         <h1>Price Compare</h1>
-        <p className="text-silver-500 text-sm mt-1">
+        <p className="text-zinc-500 text-sm mt-1">
           Find the same product across all shops and compare side by side.
         </p>
       </div>
 
       <form onSubmit={run} className="flex gap-2 max-w-lg">
         <div className="relative flex-1">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-silver-400" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
           <input
             className="input pl-9"
             placeholder="e.g. RTX 4070 Ti Super"
@@ -54,7 +56,7 @@ export default function ComparePage() {
       </form>
 
       {loading && (
-        <div className="flex justify-center py-12 text-silver-300">
+        <div className="flex justify-center py-12 text-zinc-600">
           <Loader size={24} className="animate-spin" />
         </div>
       )}
@@ -65,21 +67,24 @@ export default function ComparePage() {
         return (
           <div key={gi} className="card overflow-hidden">
             {/* Product header */}
-            <div className="flex items-center gap-3 p-4 border-b border-silver-100 bg-cream-50">
+            <div className="flex items-center gap-3 p-4 border-b border-white/[0.08] bg-white/[0.04]">
               {sorted[0]?.image && (
                 <img src={sorted[0].image} alt="" className="w-14 h-14 object-contain rounded" />
               )}
               <div>
-                <p className="font-medium text-silver-900 text-sm">{sorted[0]?.title}</p>
-                <p className="text-xs text-silver-400 mt-0.5">{sorted.length} shops listed</p>
+                <p className="font-medium text-zinc-100 text-sm">{sorted[0]?.title}</p>
+                <p className="text-xs text-zinc-500 mt-0.5">{sorted.length} shops listed</p>
               </div>
             </div>
 
             {/* Price rows */}
-            <div className="divide-y divide-silver-50">
+            <div className="divide-y divide-white/[0.06]">
               {sorted.map((r, i) => (
-                <div key={i} className={`flex items-center gap-3 px-4 py-3
-                     ${r.price === low && r.availability ? "bg-green-50/60" : ""}`}>
+                <div
+                  key={i}
+                  className={`flex items-center gap-3 px-4 py-3
+                     ${r.price === low && r.availability ? "bg-emerald-500/10" : ""}`}
+                >
                   {/* Shop badge */}
                   <span
                     className="text-xs font-medium px-2 py-0.5 rounded-full text-white shrink-0"
@@ -92,15 +97,17 @@ export default function ComparePage() {
                   <span className="shrink-0">
                     {r.availability
                       ? <CheckCircle size={14} className="text-success" />
-                      : <XCircle    size={14} className="text-silver-300" />}
+                      : <XCircle size={14} className="text-zinc-600" />}
                   </span>
 
                   {/* Price */}
-                  <span className={`font-semibold text-sm flex-1
-                       ${r.price === low && r.availability ? "text-success" : "text-silver-800"}`}>
+                  <span
+                    className={`font-semibold text-sm flex-1
+                       ${r.price === low && r.availability ? "text-success" : "text-zinc-200"}`}
+                  >
                     {r.price > 0 ? formatBDT(r.price) : "N/A"}
                     {r.original_price && r.original_price > r.price && (
-                      <span className="text-xs text-silver-400 line-through ml-2">
+                      <span className="text-xs text-zinc-500 line-through ml-2">
                         {formatBDT(r.original_price)}
                       </span>
                     )}
@@ -119,7 +126,7 @@ export default function ComparePage() {
       })}
 
       {!loading && groups.length === 0 && q && (
-        <p className="text-silver-400 text-sm text-center py-8">No results found.</p>
+        <p className="text-zinc-500 text-sm text-center py-8">No results found.</p>
       )}
     </div>
   );

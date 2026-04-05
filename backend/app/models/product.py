@@ -26,6 +26,7 @@ class ProductResult(BaseModel):
     image: Optional[str] = None
     shop_name: str
     availability: bool
+    relevance_score: Optional[float] = None
 
     @classmethod
     def truncate(cls, text: str, max_len: int = 150) -> str:

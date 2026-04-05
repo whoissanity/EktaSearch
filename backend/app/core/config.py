@@ -39,6 +39,11 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"
     debug: bool = True
 
+    # Search: live scrape tuning (Tier A/B — for Tier C see search_service module docstring)
+    search_shop_timeout_seconds: float = 6.0
+    search_max_per_shop: int = 50
+    search_max_total: int = 200
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",")]

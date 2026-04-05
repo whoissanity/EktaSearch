@@ -25,17 +25,17 @@ export default function BuilderSlot({ slot }: Props) {
                        ${part ? "border-accent/30" : "border-dashed"}`}>
         {/* Slot label */}
         <div className="w-36 shrink-0">
-          <p className="text-xs font-medium text-silver-700">{SLOT_LABELS[slot]}</p>
+          <p className="text-xs font-medium text-zinc-400">{SLOT_LABELS[slot]}</p>
         </div>
 
         {part ? (
           <>
             {/* Selected part */}
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-silver-900 font-medium truncate">{part.product_name}</p>
-              <p className="text-xs text-silver-400">{part.retailer}</p>
+              <p className="text-sm text-zinc-100 font-medium truncate">{part.product_name}</p>
+              <p className="text-xs text-zinc-500">{part.retailer}</p>
             </div>
-            <span className="text-sm font-semibold text-silver-800 shrink-0">
+            <span className="text-sm font-semibold text-zinc-200 shrink-0">
               {formatBDT(part.price_bdt)}
             </span>
             <button
@@ -47,7 +47,7 @@ export default function BuilderSlot({ slot }: Props) {
             </button>
             <button
               onClick={() => removePart(slot)}
-              className="btn-ghost p-1.5 text-silver-300 hover:text-danger"
+              className="btn-ghost p-1.5 text-zinc-600 hover:text-danger"
               title="Remove part"
             >
               <X size={14} />
@@ -55,7 +55,7 @@ export default function BuilderSlot({ slot }: Props) {
           </>
         ) : (
           <>
-            <p className="flex-1 text-xs text-silver-400 italic">No part selected</p>
+            <p className="flex-1 text-xs text-zinc-500 italic">No part selected</p>
             <button
               onClick={() => setPicking(true)}
               className="btn-secondary text-xs py-1 px-3"

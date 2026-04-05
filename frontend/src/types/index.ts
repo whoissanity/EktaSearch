@@ -9,6 +9,7 @@ export interface ProductResult {
   image?: string;
   shop_name: string;
   availability: boolean;
+  relevance_score?: number;
 }
 
 export interface SearchResponse {

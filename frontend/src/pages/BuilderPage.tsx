@@ -36,7 +36,7 @@ export default function BuilderPage() {
       {/* Build name + budget */}
       <div className="card-flat p-4 flex flex-wrap gap-4">
         <div className="flex-1 min-w-40">
-          <label className="text-xs text-silver-500 mb-1 block">Build name</label>
+          <label className="text-xs text-zinc-500 mb-1 block">Build name</label>
           <input
             className="input text-sm"
             value={build.name}
@@ -44,7 +44,7 @@ export default function BuilderPage() {
           />
         </div>
         <div className="w-44">
-          <label className="text-xs text-silver-500 mb-1 block">Budget (৳)</label>
+          <label className="text-xs text-zinc-500 mb-1 block">Budget (৳)</label>
           <input
             type="number"
             className="input text-sm"
@@ -64,14 +64,14 @@ export default function BuilderPage() {
       <div className="grid sm:grid-cols-2 gap-4">
         {/* Cost summary */}
         <div className="card p-4 space-y-2">
-          <p className="text-xs font-medium text-silver-500 uppercase tracking-wide">Cost</p>
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Cost</p>
           <div className="flex justify-between text-sm">
-            <span className="text-silver-600">Total</span>
-            <span className="font-semibold text-silver-900">{formatBDT(totalBdt)}</span>
+            <span className="text-zinc-400">Total</span>
+            <span className="font-semibold text-zinc-50">{formatBDT(totalBdt)}</span>
           </div>
           {budget > 0 && (
             <div className="flex justify-between text-sm">
-              <span className="text-silver-600">Budget remaining</span>
+              <span className="text-zinc-400">Budget remaining</span>
               <span className={`font-semibold ${budgetRemaining < 0 ? "text-danger" : "text-success"}`}>
                 {formatBDT(Math.abs(budgetRemaining))}
                 {budgetRemaining < 0 ? " over" : " left"}
@@ -85,14 +85,14 @@ export default function BuilderPage() {
           <div className="card p-4 space-y-2">
             <div className="flex items-center gap-2">
               <Zap size={14} className="text-warning" />
-              <p className="text-xs font-medium text-silver-500 uppercase tracking-wide">Power</p>
+              <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Power</p>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-silver-600">Estimated draw</span>
+              <span className="text-zinc-400">Estimated draw</span>
               <span className="font-semibold">{analysis.wattage.total_estimated_watts} W</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-silver-600">Recommended PSU</span>
+              <span className="text-zinc-400">Recommended PSU</span>
               <span className="font-semibold text-accent">
                 {analysis.wattage.recommended_psu_watts} W
               </span>
@@ -103,7 +103,7 @@ export default function BuilderPage() {
 
       {/* Compatibility */}
       {analyzing && (
-        <p className="text-xs text-silver-400 text-center">Checking compatibility…</p>
+        <p className="text-xs text-zinc-500 text-center">Checking compatibility…</p>
       )}
       {analysis && (
         <div className="card p-4 space-y-3">
@@ -116,8 +116,13 @@ export default function BuilderPage() {
             </p>
           </div>
           {analysis.compatibility.issues.map((issue, i) => (
-            <div key={i} className={`flex gap-2 text-xs rounded p-2
-              ${issue.severity === "error" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>
+            <div
+              key={i}
+              className={`flex gap-2 text-xs rounded-lg p-2 border
+              ${issue.severity === "error"
+                ? "bg-rose-500/10 text-rose-200 border-rose-400/20"
+                : "bg-amber-500/10 text-amber-200 border-amber-400/20"}`}
+            >
               <AlertTriangle size={13} className="shrink-0 mt-0.5" />
               <span>{issue.message}</span>
             </div>

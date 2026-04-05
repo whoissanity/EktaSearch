@@ -2,11 +2,12 @@
 app/adapters/base.py
 Abstract base. Every retailer implements search() -> list[ProductResult].
 _abs() normalises relative URLs. _price() parses Bangladeshi price strings.
+Uses a process-wide httpx.AsyncClient (see app.core.http).
 """
 from __future__ import annotations
 from abc import ABC, abstractmethod
-import httpx
 from app.models.product import ProductResult
+from app.core.http import get_http_client
 
 
 class BaseRetailerAdapter(ABC):
@@ -14,19 +15,9 @@ class BaseRetailerAdapter(ABC):
     shop_name: str   = ""
     base_url: str    = ""
 
-    def __init__(self):
-        self.client = httpx.AsyncClient(
-            timeout=12.0,
-            headers={
-                "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/124.0 Safari/537.36"
-                ),
-                "Accept-Language": "en-US,en;q=0.9",
-            },
-            follow_redirects=True,
-        )
+    @property
+    def client(self):
+        return get_http_client()
 
     @abstractmethod
     async def search(self, query: str) -> list[ProductResult]: ...
@@ -39,7 +30,7 @@ class BaseRetailerAdapter(ABC):
             return False
 
     async def close(self):
-        await self.client.aclose()
+        """No-op: shared HTTP client is closed on app shutdown."""
 
     def _abs(self, url: str) -> str:
         if not url:

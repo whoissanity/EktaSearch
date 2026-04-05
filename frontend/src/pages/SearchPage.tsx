@@ -26,10 +26,12 @@ export default function SearchPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h1 className="text-lg font-semibold text-silver-900">
-            {loading ? "Searching…" : `${total} results for "${query}"`}
+          <h1 className="text-lg font-semibold text-zinc-50">
+            {loading && results.length === 0
+              ? "Searching…"
+              : `${total} result${total === 1 ? "" : "s"} for "${query}"`}
           </h1>
-          <p className="text-xs text-silver-400 mt-0.5">Searched across 8 Bangladeshi retailers</p>
+          <p className="text-xs text-zinc-500 mt-0.5">Searched across 8 Bangladeshi retailers</p>
         </div>
         <button
           onClick={() => setFiltersOpen((v) => !v)}
@@ -42,15 +44,23 @@ export default function SearchPage() {
       <div className="flex gap-6">
         {/* Sidebar filters — desktop always visible, mobile toggleable */}
         <aside className={`w-52 shrink-0 ${filtersOpen ? "block" : "hidden"} sm:block`}>
-          <SearchFilters />
+          <div className="glass p-4 rounded-xl sm:sticky sm:top-[4.5rem]">
+            <SearchFilters />
+          </div>
         </aside>
 
         {/* Results grid */}
         <div className="flex-1 min-w-0">
-          {loading && (
-            <div className="flex justify-center items-center py-24 text-silver-300">
+          {loading && results.length === 0 && (
+            <div className="flex justify-center items-center py-24 text-zinc-600">
               <Loader size={28} className="animate-spin" />
             </div>
+          )}
+          {loading && results.length > 0 && (
+            <p className="text-xs text-zinc-500 mb-3 flex items-center gap-2">
+              <Loader size={14} className="animate-spin shrink-0" />
+              Loading more retailers…
+            </p>
           )}
           {!loading && error && (
             <div className="flex items-center gap-2 text-danger text-sm py-8 justify-center">
@@ -58,7 +68,7 @@ export default function SearchPage() {
             </div>
           )}
           {!loading && !error && results.length === 0 && query && (
-            <p className="text-silver-400 text-sm text-center py-16">
+            <p className="text-zinc-500 text-sm text-center py-16">
               No results found for "{query}". Try a different search term.
             </p>
           )}

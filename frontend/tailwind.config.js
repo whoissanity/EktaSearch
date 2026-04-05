@@ -4,7 +4,11 @@ export default {
   theme: {
     extend: {
       colors: {
-        /* ── Silver / Cream palette ─────────────────────────── */
+        night: {
+          900: "#0f0f14",
+          950: "#07070c",
+        },
+        /* ── Silver / Cream palette (legacy; dark UI uses zinc + night) ── */
         cream: {
           50:  "#FDFCF8",
           100: "#F8F5EE",
@@ -41,6 +45,19 @@ export default {
         card:    "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
         "card-hover": "0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06)",
         panel:   "0 2px 8px rgba(0,0,0,0.08)",
+        glass:   "0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08)",
+        "glass-lg": "0 24px 64px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.1)",
+      },
+      keyframes: {
+        blob: {
+          "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+          "33%": { transform: "translate(28px, -24px) scale(1.06)" },
+          "66%": { transform: "translate(-22px, 18px) scale(0.96)" },
+        },
+      },
+      animation: {
+        blob: "blob 22s ease-in-out infinite",
+        "blob-slow": "blob 32s ease-in-out infinite",
       },
       borderRadius: {
         DEFAULT: "8px",

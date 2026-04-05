@@ -2,20 +2,33 @@
 app/main.py  —  FastAPI app factory.
 Run with: uvicorn app.main:app --reload
 """
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.core.config import get_settings
-from app.routers import search, compare, builder, cart
+from app.core.http import close_http_client, init_http_client
 from app.db.database import init_db
+from app.routers import search, compare, builder, cart
 
 settings = get_settings()
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_db()
+    await init_http_client()
+    yield
+    await close_http_client()
+
+
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="PC Bangladesh API",
+        title="EktaSearch API",
         version="1.0.0",
         docs_url="/api/docs" if settings.debug else None,
+        lifespan=lifespan,
     )
 
     app.add_middleware(
@@ -30,10 +43,6 @@ def create_app() -> FastAPI:
     app.include_router(compare.router, prefix="/api/compare", tags=["Compare"])
     app.include_router(builder.router, prefix="/api/builder", tags=["Builder"])
     app.include_router(cart.router,    prefix="/api/cart",    tags=["Cart"])
-
-    @app.on_event("startup")
-    async def startup():
-        await init_db()
 
     @app.get("/api/health")
     async def health():

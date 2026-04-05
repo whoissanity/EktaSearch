@@ -55,7 +55,7 @@ function debugProxyPlugin(): Plugin {
             },
           });
           server.config.logger.warn(
-            `\n[pc-bangladesh] No API on port 8000 (${err.code}). Vite proxies /api to ${API_PROXY_TARGET}. From folder pc-bd/backend run: uvicorn app.main:app --reload --host 127.0.0.1 --port 8000\n`,
+            `\n[ektasearch] No API on port 8000 (${err.code}). Vite proxies /api to ${API_PROXY_TARGET}. From the backend folder run: uvicorn app.main:app --reload --host 127.0.0.1 --port 8000\n`,
           );
         });
       });

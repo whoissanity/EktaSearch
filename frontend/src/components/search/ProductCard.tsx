@@ -23,15 +23,18 @@ export default function ProductCard({ product }: Props) {
     <div className="card p-4 flex flex-col gap-3 h-full">
       {/* Image + title row */}
       <div className="flex gap-3">
-        <div className="w-16 h-16 shrink-0 rounded bg-cream-50 border border-silver-100
-                        flex items-center justify-center overflow-hidden">
-          {product.image
-            ? <img src={product.image} alt={product.title}
-                   className="w-full h-full object-contain" />
-            : <span className="text-silver-200 text-xs">No img</span>}
+        <div
+          className="w-16 h-16 shrink-0 rounded-lg bg-white/[0.04] border border-white/[0.1]
+                        flex items-center justify-center overflow-hidden backdrop-blur-sm"
+        >
+          {product.image ? (
+            <img src={product.image} alt={product.title} className="w-full h-full object-contain" />
+          ) : (
+            <span className="text-zinc-600 text-xs">No img</span>
+          )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-silver-900 leading-snug line-clamp-3">
+          <p className="text-sm font-medium text-zinc-100 leading-snug line-clamp-3">
             {truncate(product.title, 80)}
           </p>
           <span
@@ -45,7 +48,7 @@ export default function ProductCard({ product }: Props) {
 
       {/* Description */}
       {product.description && (
-        <p className="text-xs text-silver-400 leading-relaxed line-clamp-2">
+        <p className="text-xs text-zinc-500 leading-relaxed line-clamp-2">
           {product.description}
         </p>
       )}
@@ -54,14 +57,14 @@ export default function ProductCard({ product }: Props) {
       <div className="flex items-center gap-2 flex-wrap">
         {product.price > 0
           ? <span className="price-low">{formatBDT(product.price)}</span>
-          : <span className="text-sm text-silver-400">Price unavailable</span>}
+          : <span className="text-sm text-zinc-500">Price unavailable</span>}
         {product.original_price && product.original_price > product.price && (
-          <span className="text-xs text-silver-400 line-through">
+          <span className="text-xs text-zinc-500 line-through">
             {formatBDT(product.original_price)}
           </span>
         )}
         {savings && (
-          <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
+          <span className="text-[10px] bg-emerald-500/15 text-emerald-300 border border-emerald-400/20 px-1.5 py-0.5 rounded-full font-medium">
             -{savings}%
           </span>
         )}
