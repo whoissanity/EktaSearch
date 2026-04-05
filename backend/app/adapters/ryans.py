@@ -15,11 +15,14 @@ class RyansAdapter(BaseRetailerAdapter):
     shop_name   = "Ryans Computers"
     base_url    = "https://www.ryans.com"
 
-    async def search(self, query: str) -> list[ProductResult]:
+    async def search_page(self, query: str, page: int) -> list[ProductResult]:
+        if page < 1:
+            return []
         try:
-            resp = await self.client.get(
-                f"{self.base_url}/search", params={"search": query}
-            )
+            params: dict[str, str | int] = {"search": query}
+            if page > 1:
+                params["page"] = page
+            resp = await self.client.get(f"{self.base_url}/search", params=params)
             resp.raise_for_status()
         except Exception:
             return []

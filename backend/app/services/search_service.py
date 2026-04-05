@@ -63,7 +63,7 @@ def _effective_fetch_query(p: SearchParams) -> str:
 def _fetch_cache_key(p: SearchParams) -> str:
     eff = _effective_fetch_query(p).lower().strip()
     retailers_key = (p.retailers or "").strip().lower() or "all"
-    return make_cache_key("search_fetch", "v2", eff, retailers_key)
+    return make_cache_key("search_fetch", "v3", eff, retailers_key)
 
 
 def _score_products(user_query: str, items: list[ProductResult]) -> list[ProductResult]:
@@ -118,15 +118,24 @@ def _sort_results(results: list[ProductResult], sort_by: str) -> None:
         )
 
 
-def _cap_lists(
-    per_shop: list[list[ProductResult]],
-    max_per_shop: int,
-    max_total: int,
+_STREAM_TAIL_DONE = object()
+
+
+async def _safe_search_page(
+    adapter_cls: type[BaseRetailerAdapter],
+    fetch_query: str,
+    page: int,
+    timeout: float,
 ) -> list[ProductResult]:
-    flat: list[ProductResult] = []
-    for shop in per_shop:
-        flat.extend(shop[:max_per_shop])
-    return flat[:max_total]
+    adapter = adapter_cls()
+    try:
+        return await asyncio.wait_for(adapter.search_page(fetch_query, page), timeout=timeout)
+    except asyncio.TimeoutError:
+        logger.warning("[%s] page %s timed out", adapter_cls.shop_name, page)
+        return []
+    except Exception as e:
+        logger.warning("[%s] page %s failed: %s", adapter_cls.shop_name, page, e)
+        return []
 
 
 async def _safe_search_one(
@@ -134,15 +143,27 @@ async def _safe_search_one(
     fetch_query: str,
     timeout: float,
 ) -> list[ProductResult]:
-    adapter = adapter_cls()
-    try:
-        return await asyncio.wait_for(adapter.search(fetch_query), timeout=timeout)
-    except asyncio.TimeoutError:
-        logger.warning("[%s] search timed out", adapter_cls.shop_name)
-        return []
-    except Exception as e:
-        logger.warning("[%s] search failed: %s", adapter_cls.shop_name, e)
-        return []
+    return await _safe_search_page(adapter_cls, fetch_query, 1, timeout)
+
+
+async def _fetch_shop_all_pages(
+    adapter_cls: type[BaseRetailerAdapter],
+    fetch_query: str,
+    timeout: float,
+    max_pages: int,
+) -> list[ProductResult]:
+    out: list[ProductResult] = []
+    prev_links: set[str] | None = None
+    for page in range(1, max_pages + 1):
+        rows = await _safe_search_page(adapter_cls, fetch_query, page, timeout)
+        if not rows:
+            break
+        links = {r.link for r in rows}
+        if prev_links is not None and links <= prev_links:
+            break
+        prev_links = links
+        out.extend(rows)
+    return out
 
 
 async def _fetch_merged_scored(p: SearchParams) -> list[ProductResult]:
@@ -150,14 +171,18 @@ async def _fetch_merged_scored(p: SearchParams) -> list[ProductResult]:
     adapters = _adapters_for_retailers(p.retailers)
     fetch_q = _effective_fetch_query(p)
     timeout = settings.search_shop_timeout_seconds
-    tasks = [_safe_search_one(A, fetch_q, timeout) for A in adapters]
-    per_shop = await asyncio.gather(*tasks)
-    merged = _cap_lists(
-        per_shop,
-        settings.search_max_per_shop,
-        settings.search_max_total,
+    max_pages = settings.search_max_retailer_pages
+    per_shop = await asyncio.gather(
+        *[_fetch_shop_all_pages(A, fetch_q, timeout, max_pages) for A in adapters]
     )
-    return _score_products(p.query, merged)
+    flat: list[ProductResult] = []
+    for shop_rows in per_shop:
+        flat.extend(shop_rows)
+    scored = _score_products(p.query, flat)
+    by_link: dict[str, ProductResult] = {}
+    for r in scored:
+        by_link[r.link] = r
+    return list(by_link.values())
 
 
 async def search_all(p: SearchParams) -> SearchResponse:
@@ -184,12 +209,12 @@ async def search_all(p: SearchParams) -> SearchResponse:
 
 async def search_stream(p: SearchParams) -> AsyncIterator[bytes]:
     """
-    NDJSON: {type:'chunk', shop, results}, ... then {type:'done', total, query}.
+    NDJSON: {type:'chunk', shop, page?, results}, ... then {type:'done', total, query}.
+    Page 1 chunks are emitted as each shop finishes; page 2+ arrive in the background.
     """
     q_display = p.query.strip()
     ck = _fetch_cache_key(p)
     settings = get_settings()
-    max_total = settings.search_max_total
     cached = await cache_get(ck)
 
     if cached:
@@ -198,6 +223,7 @@ async def search_stream(p: SearchParams) -> AsyncIterator[bytes]:
             {
                 "type": "chunk",
                 "shop": "_cache",
+                "page": 1,
                 "results": [x.model_dump() for x in merged],
             },
             ensure_ascii=False,
@@ -207,30 +233,60 @@ async def search_stream(p: SearchParams) -> AsyncIterator[bytes]:
         adapters = _adapters_for_retailers(p.retailers)
         fetch_q = _effective_fetch_query(p)
         timeout = settings.search_shop_timeout_seconds
-        max_ps = settings.search_max_per_shop
+        max_pages = settings.search_max_retailer_pages
+        by_link: dict[str, ProductResult] = {}
 
-        async def one(cls: type[BaseRetailerAdapter]) -> tuple[str, list[ProductResult]]:
-            rows = await _safe_search_one(cls, fetch_q, timeout)
-            return cls.shop_name, rows[:max_ps]
-
-        acc: list[ProductResult] = []
-        tasks = [asyncio.create_task(one(A)) for A in adapters]
-        for fut in asyncio.as_completed(tasks):
-            shop_name, rows = await fut
-            scored = _score_products(q_display, rows)
-            acc.extend(scored)
-            line = json.dumps(
+        def chunk_line(shop_name: str, page_no: int, scored: list[ProductResult]) -> str:
+            for r in scored:
+                by_link[r.link] = r
+            return json.dumps(
                 {
                     "type": "chunk",
                     "shop": shop_name,
+                    "page": page_no,
                     "results": [x.model_dump() for x in scored],
                 },
                 ensure_ascii=False,
             )
-            yield (line + "\n").encode("utf-8")
 
-        acc = acc[:max_total]
-        await cache_set(ck, [r.model_dump() for r in acc])
+        async def page_one(cls: type[BaseRetailerAdapter]) -> tuple[str, int, list[ProductResult]]:
+            rows = await _safe_search_page(cls, fetch_q, 1, timeout)
+            return cls.shop_name, 1, _score_products(q_display, rows)
+
+        first_tasks = [asyncio.create_task(page_one(A)) for A in adapters]
+        for fut in asyncio.as_completed(first_tasks):
+            shop_name, page_no, scored = await fut
+            yield (chunk_line(shop_name, page_no, scored) + "\n").encode("utf-8")
+
+        q: asyncio.Queue = asyncio.Queue()
+
+        async def tail_pages(cls: type[BaseRetailerAdapter]) -> None:
+            prev_links: set[str] | None = None
+            page_no = 2
+            while page_no <= max_pages:
+                rows = await _safe_search_page(cls, fetch_q, page_no, timeout)
+                if not rows:
+                    break
+                links = {r.link for r in rows}
+                if prev_links is not None and links <= prev_links:
+                    break
+                prev_links = links
+                scored = _score_products(q_display, rows)
+                await q.put((cls.shop_name, page_no, scored))
+                page_no += 1
+            await q.put(_STREAM_TAIL_DONE)
+
+        tail_tasks = [asyncio.create_task(tail_pages(A)) for A in adapters]
+        pending = len(tail_tasks)
+        while pending > 0:
+            item = await q.get()
+            if item is _STREAM_TAIL_DONE:
+                pending -= 1
+                continue
+            shop_name, page_no, scored = item
+            yield (chunk_line(shop_name, page_no, scored) + "\n").encode("utf-8")
+
+        await cache_set(ck, [r.model_dump() for r in by_link.values()])
 
     final_raw = await cache_get(ck) or []
     merged = _hydrate_from_cache(final_raw, q_display)

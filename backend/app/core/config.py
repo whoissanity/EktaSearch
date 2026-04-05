@@ -43,6 +43,8 @@ class Settings(BaseSettings):
     search_shop_timeout_seconds: float = 6.0
     search_max_per_shop: int = 50
     search_max_total: int = 200
+    # Per-retailer HTML pagination (page 2+); safety cap to avoid unbounded scrapes
+    search_max_retailer_pages: int = 60
 
     @property
     def cors_origins_list(self) -> list[str]:

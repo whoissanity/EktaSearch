@@ -82,6 +82,18 @@ export interface BuildAnalysis {
   wattage: { total_estimated_watts: number; recommended_psu_watts: number; breakdown: { slot: string; component: string; estimated_watts: number }[] };
 }
 
+export type CommunityTopic = "review" | "issue" | "suggestion" | "general";
+
+export interface CommunityPost {
+  id: string;
+  title: string;
+  body: string;
+  topic: CommunityTopic;
+  retailer_id: string | null;
+  author_name: string;
+  created_at: string | null;
+}
+
 export const RETAILERS: Record<string, { name: string; color: string }> = {
   ryans:         { name: "Ryans Computers",  color: "#1E40AF" },
   startech:      { name: "Star Tech",        color: "#065F46" },

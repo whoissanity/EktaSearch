@@ -1,6 +1,15 @@
 // src/services/api.ts  —  all backend calls in one place
 import axios from "axios";
-import type { SearchResponse, Cart, CartItem, PCBuild, BuildAnalysis, ProductResult } from "../types";
+import type {
+  SearchResponse,
+  Cart,
+  CartItem,
+  PCBuild,
+  BuildAnalysis,
+  ProductResult,
+  CommunityPost,
+  CommunityTopic,
+} from "../types";
 import { applySearchFilters, sortSearchResults } from "../utils/searchResults";
 import type { SearchFilters } from "../types";
 
@@ -36,7 +45,7 @@ export function searchProducts(params: SearchRequestParams) {
 }
 
 type StreamMsg =
-  | { type: "chunk"; shop: string; results: ProductResult[] }
+  | { type: "chunk"; shop: string; page?: number; results: ProductResult[] }
   | { type: "done"; total: number; query: string };
 
 /**
@@ -106,6 +115,29 @@ export const clearCart     = () => api.delete("/cart");
 
 export const analyzeBuild  = (build: PCBuild) =>
   api.post<BuildAnalysis>("/builder/analyze", build).then(r => r.data);
+
+export type CommunityListParams = {
+  topic?: CommunityTopic;
+  retailer_id?: string;
+  skip?: number;
+  limit?: number;
+};
+
+export function fetchCommunityPosts(params?: CommunityListParams) {
+  return api
+    .get<{ posts: CommunityPost[]; total: number }>("/community/posts", { params: params ?? {} })
+    .then((r) => r.data);
+}
+
+export function createCommunityPost(body: {
+  title: string;
+  body: string;
+  topic: CommunityTopic;
+  retailer_id?: string | null;
+  author_name: string;
+}) {
+  return api.post<CommunityPost>("/community/posts", body).then((r) => r.data);
+}
 export const saveBuild     = (build: PCBuild) =>
   api.post<{ build_id: string }>("/builder/save", build).then(r => r.data);
 export const loadBuild     = (id: string) =>

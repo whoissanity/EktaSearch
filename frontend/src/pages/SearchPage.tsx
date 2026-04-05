@@ -1,17 +1,38 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Loader, AlertCircle, SlidersHorizontal } from "lucide-react";
+import { Loader, AlertCircle, SlidersHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
 import { useSearchStore } from "../store/searchStore";
 import ProductCard from "../components/search/ProductCard";
 import SearchFilters from "../components/search/SearchFilters";
-import { useState } from "react";
+
+const RESULTS_PER_PAGE = 24;
 
 export default function SearchPage() {
   const [params] = useSearchParams();
   const query = params.get("q") ?? "";
   const { setQuery, runSearch, results, total, loading, error } = useSearchStore();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [uiPage, setUiPage] = useState(1);
   const ran = useRef("");
+
+  useEffect(() => {
+    setUiPage(1);
+  }, [query]);
+
+  const pageCount = Math.max(1, Math.ceil(results.length / RESULTS_PER_PAGE));
+  const currentPage = Math.min(uiPage, pageCount);
+  const pageSlice = useMemo(
+    () =>
+      results.slice(
+        (currentPage - 1) * RESULTS_PER_PAGE,
+        currentPage * RESULTS_PER_PAGE
+      ),
+    [results, currentPage]
+  );
+
+  useEffect(() => {
+    if (uiPage > pageCount) setUiPage(pageCount);
+  }, [uiPage, pageCount]);
 
   useEffect(() => {
     if (query && query !== ran.current) {
@@ -31,7 +52,15 @@ export default function SearchPage() {
               ? "Searching…"
               : `${total} result${total === 1 ? "" : "s"} for "${query}"`}
           </h1>
-          <p className="text-xs text-zinc-500 mt-0.5">Searched across 8 Bangladeshi retailers</p>
+          <p className="text-xs text-zinc-500 mt-0.5">
+            Searched across 8 Bangladeshi retailers
+            {pageCount > 1 && !loading && (
+              <span className="text-zinc-400">
+                {" "}
+                · Page {currentPage} of {pageCount}
+              </span>
+            )}
+          </p>
         </div>
         <button
           onClick={() => setFiltersOpen((v) => !v)}
@@ -59,7 +88,7 @@ export default function SearchPage() {
           {loading && results.length > 0 && (
             <p className="text-xs text-zinc-500 mb-3 flex items-center gap-2">
               <Loader size={14} className="animate-spin shrink-0" />
-              Loading more retailers…
+              Loading more pages from retailers…
             </p>
           )}
           {!loading && error && (
@@ -73,10 +102,77 @@ export default function SearchPage() {
             </p>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {results.map((product, i) => (
-              <ProductCard key={product.link + i} product={product} />
+            {pageSlice.map((product) => (
+              <ProductCard
+                key={`${product.shop_name}|${product.link}`}
+                product={product}
+              />
             ))}
           </div>
+
+          {pageCount > 1 && results.length > 0 && (
+            <nav
+              className="mt-8 flex flex-wrap items-center justify-center gap-2"
+              aria-label="Result pages"
+            >
+              <button
+                type="button"
+                className="btn-secondary inline-flex items-center gap-1 px-3 py-1.5 text-sm disabled:opacity-40"
+                disabled={currentPage <= 1}
+                onClick={() => setUiPage((p) => Math.max(1, p - 1))}
+              >
+                <ChevronLeft size={16} /> Previous
+              </button>
+              <div className="flex flex-wrap items-center justify-center gap-1">
+                {(() => {
+                  const nums =
+                    pageCount <= 9
+                      ? Array.from({ length: pageCount }, (_, i) => i + 1)
+                      : [
+                          ...new Set(
+                            [
+                              1,
+                              pageCount,
+                              currentPage - 1,
+                              currentPage,
+                              currentPage + 1,
+                            ].filter((n) => n >= 1 && n <= pageCount)
+                          ),
+                        ].sort((a, b) => a - b);
+                  return nums.map((n, idx) => {
+                    const prev = nums[idx - 1];
+                    const showEllipsis = idx > 0 && prev !== undefined && n - prev > 1;
+                    return (
+                      <span key={n} className="inline-flex items-center gap-1">
+                        {showEllipsis && (
+                          <span className="px-1 text-zinc-600 text-sm">…</span>
+                        )}
+                        <button
+                          type="button"
+                          className={`min-w-[2.25rem] px-2 py-1.5 rounded-lg text-sm transition-colors ${
+                            n === currentPage
+                              ? "bg-violet-600 text-white"
+                              : "bg-white/[0.06] text-zinc-300 hover:bg-white/[0.1]"
+                          }`}
+                          onClick={() => setUiPage(n)}
+                        >
+                          {n}
+                        </button>
+                      </span>
+                    );
+                  });
+                })()}
+              </div>
+              <button
+                type="button"
+                className="btn-secondary inline-flex items-center gap-1 px-3 py-1.5 text-sm disabled:opacity-40"
+                disabled={currentPage >= pageCount}
+                onClick={() => setUiPage((p) => Math.min(pageCount, p + 1))}
+              >
+                Next <ChevronRight size={16} />
+              </button>
+            </nav>
+          )}
         </div>
       </div>
     </div>

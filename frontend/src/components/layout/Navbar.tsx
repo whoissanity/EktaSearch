@@ -1,6 +1,6 @@
 // src/components/layout/Navbar.tsx
 import { Link, useNavigate } from "react-router-dom";
-import { ShoppingCart, Search, Menu, X } from "lucide-react";
+import { ShoppingCart, Search, Menu, X, MessagesSquare } from "lucide-react";
 import EktaSearchWordmark from "../brand/EktaSearchWordmark";
 import { useState } from "react";
 import { useCartStore } from "../../store/cartStore";
@@ -46,6 +46,10 @@ export default function Navbar() {
           <Link to="/compare" className="btn-ghost">
             Compare
           </Link>
+          <Link to="/community" className="btn-ghost inline-flex items-center gap-1">
+            <MessagesSquare size={16} className="opacity-80" />
+            Community
+          </Link>
         </div>
 
         <button onClick={() => setOpen(true)} className="relative btn-ghost" aria-label="Cart">
@@ -89,6 +93,13 @@ export default function Navbar() {
               onClick={() => setMenuOpen(false)}
             >
               Compare
+            </Link>
+            <Link
+              to="/community"
+              className="btn-secondary text-xs"
+              onClick={() => setMenuOpen(false)}
+            >
+              Community
             </Link>
           </div>
         </div>

@@ -15,18 +15,22 @@ class TechLandAdapter(BaseRetailerAdapter):
     shop_name   = "Tech Land BD"
     base_url    = "https://www.techlandbd.com"
 
-    async def search(self, query: str) -> list[ProductResult]:
+    async def search_page(self, query: str, page: int) -> list[ProductResult]:
+        if page < 1:
+            return []
         try:
             import urllib.parse
+
             encoded = urllib.parse.quote(query)
+            url = f"{self.base_url}/search/advance/product/result/{encoded}"
             resp = await self.client.get(
-                f"{self.base_url}/search/advance/product/result/{encoded}"
+                url,
+                params={"page": page} if page > 1 else None,
             )
             resp.raise_for_status()
         except Exception:
             return []
         soup = BeautifulSoup(resp.text, "lxml")
-        # Each product is wrapped in a div with h-full > bg-white card inside
         cards = soup.select("div.h-full > div.bg-white")
         return [p for card in cards if (p := self._parse(card)) is not None]
 

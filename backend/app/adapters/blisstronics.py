@@ -16,12 +16,17 @@ class BlisstronicsAdapter(BaseRetailerAdapter):
     shop_name   = "The Blisstronics"
     base_url    = "https://theblisstronics.com"
 
-    async def search(self, query: str) -> list[ProductResult]:
+    async def search_page(self, query: str, page: int) -> list[ProductResult]:
+        if page < 1:
+            return []
         try:
-            resp = await self.client.get(
-                self.base_url,
-                params={"s": query, "post_type": "product"},
-            )
+            base = self.base_url.rstrip("/")
+            if page == 1:
+                url, params = self.base_url, {"s": query, "post_type": "product"}
+            else:
+                url = f"{base}/page/{page}/"
+                params = {"s": query, "post_type": "product"}
+            resp = await self.client.get(url, params=params)
             resp.raise_for_status()
         except Exception:
             return []

@@ -3,7 +3,8 @@ app/db/models.py
 SQLAlchemy ORM table definitions.
 - SavedBuild    → user's PC builds (stored as JSON blob)
 - CartSession   → guest cart (stored as JSON blob, keyed by session_id)
-- ProductCache  → optional: cache scraped product data to DB if Redis is down
+- ProductCache   → optional: cache scraped product data to DB if Redis is down
+- CommunityPost  → forum posts (topic + optional retailer tag)
 """
 import json
 from datetime import datetime
@@ -43,6 +44,33 @@ class CartSession(Base):
         return {
             "session_id": self.session_id,
             "items": json.loads(self.items_json),
+        }
+
+
+class CommunityPost(Base):
+    """
+    User-submitted forum-style posts: reviews, issues, suggestions, or general chat.
+    Optional retailer_id ties the post to a shop (rant, question about that store).
+    """
+    __tablename__ = "community_posts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    title: Mapped[str] = mapped_column(String(200))
+    body: Mapped[str] = mapped_column(Text)
+    topic: Mapped[str] = mapped_column(String(32), index=True)
+    retailer_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    author_name: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "title": self.title,
+            "body": self.body,
+            "topic": self.topic,
+            "retailer_id": self.retailer_id,
+            "author_name": self.author_name,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
 

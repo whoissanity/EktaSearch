@@ -7,6 +7,7 @@ import HomePage from "./pages/HomePage";
 import SearchPage from "./pages/SearchPage";
 import BuilderPage from "./pages/BuilderPage";
 import ComparePage from "./pages/ComparePage";
+import CommunityPage from "./pages/CommunityPage";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -17,6 +18,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/search"  element={<SearchPage />} />
           <Route path="/builder" element={<BuilderPage />} />
           <Route path="/compare" element={<ComparePage />} />
+          <Route path="/community" element={<CommunityPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

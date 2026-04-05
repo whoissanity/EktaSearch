@@ -15,12 +15,14 @@ class PotakaAdapter(BaseRetailerAdapter):
     shop_name   = "PoTaka IT"
     base_url    = "https://potakait.com"
 
-    async def search(self, query: str) -> list[ProductResult]:
+    async def search_page(self, query: str, page: int) -> list[ProductResult]:
+        if page < 1:
+            return []
         try:
-            resp = await self.client.get(
-                f"{self.base_url}/product/search",
-                params={"search": query},
-            )
+            params: dict[str, str | int] = {"search": query}
+            if page > 1:
+                params["page"] = page
+            resp = await self.client.get(f"{self.base_url}/product/search", params=params)
             resp.raise_for_status()
         except Exception:
             return []

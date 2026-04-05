@@ -15,12 +15,14 @@ class SkylandAdapter(BaseRetailerAdapter):
     shop_name   = "Skyland"
     base_url    = "https://www.skyland.com.bd"
 
-    async def search(self, query: str) -> list[ProductResult]:
+    async def search_page(self, query: str, page: int) -> list[ProductResult]:
+        if page < 1:
+            return []
         try:
-            resp = await self.client.get(
-                f"{self.base_url}/index.php",
-                params={"route": "product/search", "search": query},
-            )
+            params: dict[str, str | int] = {"route": "product/search", "search": query}
+            if page > 1:
+                params["page"] = page
+            resp = await self.client.get(f"{self.base_url}/index.php", params=params)
             resp.raise_for_status()
         except Exception:
             return []

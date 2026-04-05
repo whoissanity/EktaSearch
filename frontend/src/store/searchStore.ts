@@ -55,7 +55,7 @@ export const useSearchStore = create<SearchState>((set, get) => ({
           set({
             results: items,
             total: items.length,
-            loading: items.length === 0,
+            loading: true,
           });
         },
       });

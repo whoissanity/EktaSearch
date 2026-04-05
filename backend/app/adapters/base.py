@@ -1,7 +1,7 @@
 """
 app/adapters/base.py
-Abstract base. Every retailer implements search() -> list[ProductResult].
-_abs() normalises relative URLs. _price() parses Bangladeshi price strings.
+Abstract base. Every retailer implements search_page(query, page) -> list[ProductResult].
+search() is page 1 only. _abs() normalises relative URLs. _price() parses BDT strings.
 Uses a process-wide httpx.AsyncClient (see app.core.http).
 """
 from __future__ import annotations
@@ -20,7 +20,10 @@ class BaseRetailerAdapter(ABC):
         return get_http_client()
 
     @abstractmethod
-    async def search(self, query: str) -> list[ProductResult]: ...
+    async def search_page(self, query: str, page: int) -> list[ProductResult]: ...
+
+    async def search(self, query: str) -> list[ProductResult]:
+        return await self.search_page(query, 1)
 
     async def is_healthy(self) -> bool:
         try:
