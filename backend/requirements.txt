@@ -6,7 +6,7 @@ lxml==5.2.1
 pydantic-core>=2.20.0
 pydantic-settings==2.2.1
 redis==5.0.4
-sqlalchemy==2.0.30
+sqlalchemy>=2.0.36
 aiosqlite==0.20.0
 python-dotenv==1.0.1
 tenacity==8.3.0
