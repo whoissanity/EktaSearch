@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; }
+
+  body {
+    @apply bg-cream-100 text-silver-800 font-sans;
+    min-height: 100vh;
+  }
+
+  h1 { @apply text-2xl font-semibold text-silver-900 tracking-tight; }
+  h2 { @apply text-xl font-semibold text-silver-800; }
+  h3 { @apply text-base font-medium text-silver-800; }
+
+  a { @apply text-accent hover:text-accent-dark transition-colors; }
+
+  /* Custom scrollbar — subtle silver */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-cream-200; }
+  ::-webkit-scrollbar-thumb { @apply bg-silver-300 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-silver-400; }
+}
+
+@layer components {
+  /* ── Buttons ─────────────────────────────────────────── */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded
+           bg-accent text-white text-sm font-medium
+           hover:bg-accent-dark active:scale-95
+           transition-all duration-150 select-none;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded
+           bg-cream-200 text-silver-700 text-sm font-medium border border-silver-200
+           hover:bg-cream-300 active:scale-95
+           transition-all duration-150 select-none;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded
+           text-silver-600 text-sm
+           hover:bg-cream-200 active:scale-95
+           transition-all duration-150 select-none;
+  }
+
+  /* ── Cards ────────────────────────────────────────────── */
+  .card {
+    @apply bg-white rounded-lg border border-silver-100
+           shadow-card hover:shadow-card-hover transition-shadow duration-200;
+  }
+
+  .card-flat {
+    @apply bg-white rounded-lg border border-silver-100;
+  }
+
+  /* ── Inputs ───────────────────────────────────────────── */
+  .input {
+    @apply w-full px-3 py-2 rounded border border-silver-200 bg-white
+           text-silver-800 text-sm placeholder-silver-400
+           focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent
+           transition-colors;
+  }
+
+  /* ── Badges ───────────────────────────────────────────── */
+  .badge-stock {
+    @apply text-xs px-2 py-0.5 rounded-full font-medium;
+  }
+  .badge-instock  { @apply badge-stock bg-green-100 text-green-800; }
+  .badge-outstock { @apply badge-stock bg-red-100 text-red-700; }
+
+  .badge-retailer {
+    @apply text-xs px-2 py-0.5 rounded-full bg-silver-100 text-silver-600 font-medium;
+  }
+
+  /* ── Price ────────────────────────────────────────────── */
+  .price-tag {
+    @apply text-lg font-semibold text-silver-900;
+  }
+  .price-low {
+    @apply text-lg font-semibold text-success;
+  }
+}

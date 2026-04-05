@@ -1,0 +1,53 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ["./index.html", "./src/**/*.{ts,tsx}"],
+  theme: {
+    extend: {
+      colors: {
+        /* ── Silver / Cream palette ─────────────────────────── */
+        cream: {
+          50:  "#FDFCF8",
+          100: "#F8F5EE",
+          200: "#F0EBE0",
+          300: "#E4DDD0",
+          400: "#CFC7B8",
+        },
+        silver: {
+          100: "#F0F0F2",
+          200: "#E2E2E6",
+          300: "#C8C8CE",
+          400: "#A8A8B0",
+          500: "#86868F",
+          600: "#65656E",
+          700: "#44444C",
+          800: "#2A2A30",
+          900: "#16161A",
+        },
+        accent: {
+          /* Steel blue — used for CTAs, links, active states */
+          DEFAULT: "#4A6FA5",
+          light:   "#6B8DBF",
+          dark:    "#2F4E7A",
+        },
+        danger:  "#C0392B",
+        success: "#1A7A4A",
+        warning: "#B8860B",
+      },
+      fontFamily: {
+        sans: ["Inter", "system-ui", "sans-serif"],
+        mono: ["JetBrains Mono", "monospace"],
+      },
+      boxShadow: {
+        card:    "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
+        "card-hover": "0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06)",
+        panel:   "0 2px 8px rgba(0,0,0,0.08)",
+      },
+      borderRadius: {
+        DEFAULT: "8px",
+        lg: "12px",
+        xl: "16px",
+      },
+    },
+  },
+  plugins: [],
+};
