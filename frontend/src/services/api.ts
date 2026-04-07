@@ -8,7 +8,11 @@ import type {
   BuildAnalysis,
   ProductResult,
   CommunityPost,
+  CommunityReply,
+  CommunityAttachment,
   CommunityTopic,
+  AuthResponse,
+  AuthUser,
 } from "../types";
 import { applySearchFilters, sortSearchResults } from "../utils/searchResults";
 import type { SearchFilters } from "../types";
@@ -17,7 +21,20 @@ const api = axios.create({ baseURL: "/api", timeout: 60000 });
 
 let _sid = localStorage.getItem("pcbd_session") ?? "";
 if (!_sid) { _sid = crypto.randomUUID(); localStorage.setItem("pcbd_session", _sid); }
-api.interceptors.request.use((c) => { c.headers["x-session-id"] = _sid; return c; });
+let _authToken = localStorage.getItem("pcbd_auth_token") ?? "";
+api.interceptors.request.use((c) => {
+  c.headers["x-session-id"] = _sid;
+  if (_authToken) c.headers["x-auth-token"] = _authToken;
+  return c;
+});
+export function setAuthToken(token: string | null) {
+  _authToken = token ?? "";
+  if (_authToken) localStorage.setItem("pcbd_auth_token", _authToken);
+  else localStorage.removeItem("pcbd_auth_token");
+}
+export function getAuthToken() {
+  return _authToken;
+}
 
 export type SearchRequestParams = {
   q: string;
@@ -134,9 +151,44 @@ export function createCommunityPost(body: {
   body: string;
   topic: CommunityTopic;
   retailer_id?: string | null;
-  author_name: string;
+  author_name?: string;
+  attachment_ids?: string[];
 }) {
   return api.post<CommunityPost>("/community/posts", body).then((r) => r.data);
+}
+export function createCommunityReply(postId: string, body: { body: string; author_name?: string; attachment_ids?: string[] }) {
+  return api.post<CommunityReply>(`/community/posts/${postId}/replies`, body).then((r) => r.data);
+}
+
+export function voteCommunityPost(postId: string, value: -1 | 0 | 1) {
+  return api
+    .post<{ post_id: string; likes: number; dislikes: number; score: number; user_vote: -1 | 0 | 1 }>(
+      `/community/posts/${postId}/vote`,
+      { value }
+    )
+    .then((r) => r.data);
+}
+export async function uploadCommunityAttachments(files: File[]) {
+  const form = new FormData();
+  files.forEach((f) => form.append("files", f));
+  return api
+    .post<{ files: CommunityAttachment[] }>("/community/attachments", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    })
+    .then((r) => r.data.files);
+}
+
+export function register(body: { email: string; username: string; password: string }) {
+  return api.post<AuthResponse>("/auth/register", body).then((r) => r.data);
+}
+export function login(body: { email: string; password: string }) {
+  return api.post<AuthResponse>("/auth/login", body).then((r) => r.data);
+}
+export function logout() {
+  return api.post("/auth/logout").then((r) => r.data);
+}
+export function me() {
+  return api.get<AuthUser>("/auth/me").then((r) => r.data);
 }
 export const saveBuild     = (build: PCBuild) =>
   api.post<{ build_id: string }>("/builder/save", build).then(r => r.data);

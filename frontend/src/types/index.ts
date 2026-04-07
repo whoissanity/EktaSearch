@@ -54,6 +54,28 @@ export const SLOT_LABELS: Record<BuildSlot, string> = {
   cooler:      "CPU Cooler",
 };
 
+export const SLOT_COMPONENT_ID: Record<BuildSlot, number> = {
+  cpu: 2,
+  cooler: 3,
+  motherboard: 4,
+  gpu: 5,
+  ram: 6,
+  storage: 7,
+  psu: 8,
+  case: 9,
+};
+
+export const COMPONENT_ID_SLOT: Record<number, BuildSlot> = {
+  2: "cpu",
+  3: "cooler",
+  4: "motherboard",
+  5: "gpu",
+  6: "ram",
+  7: "storage",
+  8: "psu",
+  9: "case",
+};
+
 export interface BuildPart {
   slot: BuildSlot;
   product_id: string;
@@ -92,6 +114,44 @@ export interface CommunityPost {
   retailer_id: string | null;
   author_name: string;
   created_at: string | null;
+  likes: number;
+  dislikes: number;
+  score: number;
+  replies_count: number;
+  user_vote: -1 | 0 | 1;
+  replies: CommunityReply[];
+  is_owner?: boolean;
+  attachments?: CommunityAttachment[];
+}
+
+export interface CommunityReply {
+  id: string;
+  post_id: string;
+  body: string;
+  author_name: string;
+  created_at: string | null;
+  is_owner?: boolean;
+  attachments?: CommunityAttachment[];
+}
+
+export interface CommunityAttachment {
+  id: string;
+  file_url: string;
+  file_name: string;
+  mime_type: string;
+  size_bytes: number;
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  username: string;
+  is_owner: boolean;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: AuthUser;
 }
 
 export const RETAILERS: Record<string, { name: string; color: string }> = {

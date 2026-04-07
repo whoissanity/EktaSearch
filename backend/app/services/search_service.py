@@ -54,16 +54,28 @@ def _adapters_for_retailers(retailers_csv: Optional[str]) -> list[type[BaseRetai
 
 
 def _effective_fetch_query(p: SearchParams) -> str:
-    q = p.query.strip()
-    if p.category and p.category.lower() in _CATEGORY_SUFFIX:
-        return f"{q} {_CATEGORY_SUFFIX[p.category.lower()]}".strip()
-    return q
+    return p.query.strip()
+
+
+def _normalized_category(p: SearchParams) -> Optional[str]:
+    c = (p.category or "").strip().lower()
+    if not c:
+        return None
+    if c != "storage":
+        return c
+    q = (p.query or "").lower()
+    if any(x in q for x in ("hdd", "hard disk", "sata hdd", "7200rpm")):
+        return "hdd"
+    if any(x in q for x in ("ssd", "nvme", "m.2", "gen4", "gen 4")):
+        return "ssd"
+    return "ssd"
 
 
 def _fetch_cache_key(p: SearchParams) -> str:
     eff = _effective_fetch_query(p).lower().strip()
     retailers_key = (p.retailers or "").strip().lower() or "all"
-    return make_cache_key("search_fetch", "v3", eff, retailers_key)
+    category_key = _normalized_category(p) or "none"
+    return make_cache_key("search_fetch", "v4", eff, retailers_key, category_key)
 
 
 def _score_products(user_query: str, items: list[ProductResult]) -> list[ProductResult]:
@@ -94,12 +106,16 @@ def _apply_price_stock_filters(
     max_price: Optional[float],
 ) -> list[ProductResult]:
     out = results
+    lo = min_price
+    hi = max_price
+    if lo is not None and hi is not None and lo > hi:
+        lo, hi = hi, lo
     if in_stock_only:
         out = [r for r in out if r.availability]
-    if min_price is not None:
-        out = [r for r in out if r.price >= min_price]
-    if max_price is not None:
-        out = [r for r in out if r.price <= max_price]
+    if lo is not None:
+        out = [r for r in out if r.price >= lo]
+    if hi is not None:
+        out = [r for r in out if r.price <= hi]
     return out
 
 
@@ -124,11 +140,17 @@ _STREAM_TAIL_DONE = object()
 async def _safe_search_page(
     adapter_cls: type[BaseRetailerAdapter],
     fetch_query: str,
+    category: Optional[str],
     page: int,
     timeout: float,
 ) -> list[ProductResult]:
     adapter = adapter_cls()
     try:
+        if category:
+            return await asyncio.wait_for(
+                adapter.search_category_page(category, fetch_query, page),
+                timeout=timeout,
+            )
         return await asyncio.wait_for(adapter.search_page(fetch_query, page), timeout=timeout)
     except asyncio.TimeoutError:
         logger.warning("[%s] page %s timed out", adapter_cls.shop_name, page)
@@ -141,21 +163,23 @@ async def _safe_search_page(
 async def _safe_search_one(
     adapter_cls: type[BaseRetailerAdapter],
     fetch_query: str,
+    category: Optional[str],
     timeout: float,
 ) -> list[ProductResult]:
-    return await _safe_search_page(adapter_cls, fetch_query, 1, timeout)
+    return await _safe_search_page(adapter_cls, fetch_query, category, 1, timeout)
 
 
 async def _fetch_shop_all_pages(
     adapter_cls: type[BaseRetailerAdapter],
     fetch_query: str,
+    category: Optional[str],
     timeout: float,
     max_pages: int,
 ) -> list[ProductResult]:
     out: list[ProductResult] = []
     prev_links: set[str] | None = None
     for page in range(1, max_pages + 1):
-        rows = await _safe_search_page(adapter_cls, fetch_query, page, timeout)
+        rows = await _safe_search_page(adapter_cls, fetch_query, category, page, timeout)
         if not rows:
             break
         links = {r.link for r in rows}
@@ -173,7 +197,7 @@ async def _fetch_merged_scored(p: SearchParams) -> list[ProductResult]:
     timeout = settings.search_shop_timeout_seconds
     max_pages = settings.search_max_retailer_pages
     per_shop = await asyncio.gather(
-        *[_fetch_shop_all_pages(A, fetch_q, timeout, max_pages) for A in adapters]
+        *[_fetch_shop_all_pages(A, fetch_q, _normalized_category(p), timeout, max_pages) for A in adapters]
     )
     flat: list[ProductResult] = []
     for shop_rows in per_shop:
@@ -250,7 +274,7 @@ async def search_stream(p: SearchParams) -> AsyncIterator[bytes]:
             )
 
         async def page_one(cls: type[BaseRetailerAdapter]) -> tuple[str, int, list[ProductResult]]:
-            rows = await _safe_search_page(cls, fetch_q, 1, timeout)
+            rows = await _safe_search_page(cls, fetch_q, _normalized_category(p), 1, timeout)
             return cls.shop_name, 1, _score_products(q_display, rows)
 
         first_tasks = [asyncio.create_task(page_one(A)) for A in adapters]
@@ -264,7 +288,7 @@ async def search_stream(p: SearchParams) -> AsyncIterator[bytes]:
             prev_links: set[str] | None = None
             page_no = 2
             while page_no <= max_pages:
-                rows = await _safe_search_page(cls, fetch_q, page_no, timeout)
+                rows = await _safe_search_page(cls, fetch_q, _normalized_category(p), page_no, timeout)
                 if not rows:
                     break
                 links = {r.link for r in rows}

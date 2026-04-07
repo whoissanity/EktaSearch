@@ -3,21 +3,21 @@
 // and a button to search + pick a part for that slot.
 
 import { Plus, X, Search } from "lucide-react";
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { BuildSlot, BuildPart } from "../../types";
-import { SLOT_LABELS } from "../../types";
+import { SLOT_COMPONENT_ID, SLOT_LABELS } from "../../types";
 import { formatBDT } from "../../utils";
 import { useBuilderStore } from "../../store/builderStore";
-import PartPickerModal from "./PartPickerModal";
 
 interface Props {
   slot: BuildSlot;
 }
 
 export default function BuilderSlot({ slot }: Props) {
-  const [picking, setPicking] = useState(false);
+  const navigate = useNavigate();
   const part = useBuilderStore((s) => s.build.parts.find((p) => p.slot === slot));
   const removePart = useBuilderStore((s) => s.removePart);
+  const openPicker = () => navigate(`/builder/choose?component_id=${SLOT_COMPONENT_ID[slot]}`);
 
   return (
     <>
@@ -39,7 +39,7 @@ export default function BuilderSlot({ slot }: Props) {
               {formatBDT(part.price_bdt)}
             </span>
             <button
-              onClick={() => setPicking(true)}
+              onClick={openPicker}
               className="btn-ghost p-1.5"
               title="Change part"
             >
@@ -57,7 +57,7 @@ export default function BuilderSlot({ slot }: Props) {
           <>
             <p className="flex-1 text-xs text-zinc-500 italic">No part selected</p>
             <button
-              onClick={() => setPicking(true)}
+              onClick={openPicker}
               className="btn-secondary text-xs py-1 px-3"
             >
               <Plus size={12} /> Choose
@@ -66,9 +66,6 @@ export default function BuilderSlot({ slot }: Props) {
         )}
       </div>
 
-      {picking && (
-        <PartPickerModal slot={slot} onClose={() => setPicking(false)} />
-      )}
     </>
   );
 }

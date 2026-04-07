@@ -25,6 +25,10 @@ class BaseRetailerAdapter(ABC):
     async def search(self, query: str) -> list[ProductResult]:
         return await self.search_page(query, 1)
 
+    async def search_category_page(self, category: str, query: str, page: int) -> list[ProductResult]:
+        # Fallback for adapters without explicit category pages.
+        return await self.search_page(query, page)
+
     async def is_healthy(self) -> bool:
         try:
             r = await self.client.get(self.base_url, timeout=5.0)
@@ -45,3 +49,12 @@ class BaseRetailerAdapter(ABC):
         cleaned = raw.replace("\u09f3", "").replace("\u09f3", "").replace("৳", "").replace("Tk", "").replace(",", "").strip()
         digits = "".join(c for c in cleaned if c.isdigit() or c == ".")
         return float(digits) if digits else 0.0
+
+    @staticmethod
+    def _matches_query(title: str, query: str) -> bool:
+        q = " ".join(query.lower().split())
+        if not q:
+            return True
+        t = title.lower()
+        toks = [x for x in q.split(" ") if x]
+        return all(tok in t for tok in toks)

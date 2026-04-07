@@ -8,7 +8,7 @@ SQLAlchemy ORM table definitions.
 """
 import json
 from datetime import datetime
-from sqlalchemy import String, Text, Float, DateTime, Integer, func
+from sqlalchemy import String, Text, Float, DateTime, Integer, func, ForeignKey, UniqueConstraint, Boolean
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.database import Base
 
@@ -47,6 +47,27 @@ class CartSession(Base):
         }
 
 
+class AppUser(Base):
+    __tablename__ = "app_users"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
+    username: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(256))
+    password_salt: Mapped[str] = mapped_column(String(128))
+    is_owner: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class AuthSession(Base):
+    __tablename__ = "auth_sessions"
+
+    token: Mapped[str] = mapped_column(String(128), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("app_users.id"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+
 class CommunityPost(Base):
     """
     User-submitted forum-style posts: reviews, issues, suggestions, or general chat.
@@ -70,6 +91,77 @@ class CommunityPost(Base):
             "topic": self.topic,
             "retailer_id": self.retailer_id,
             "author_name": self.author_name,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class CommunityReply(Base):
+    __tablename__ = "community_replies"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    post_id: Mapped[str] = mapped_column(String(36), ForeignKey("community_posts.id"), index=True)
+    body: Mapped[str] = mapped_column(Text)
+    author_name: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "post_id": self.post_id,
+            "body": self.body,
+            "author_name": self.author_name,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class CommunityVote(Base):
+    __tablename__ = "community_votes"
+    __table_args__ = (
+        UniqueConstraint("post_id", "actor_key", name="uq_community_vote_actor_post"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    post_id: Mapped[str] = mapped_column(String(36), ForeignKey("community_posts.id"), index=True)
+    actor_key: Mapped[str] = mapped_column(String(128), index=True)
+    value: Mapped[int] = mapped_column(Integer)  # 1 like, -1 dislike
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class CommunityContentAuthor(Base):
+    __tablename__ = "community_content_authors"
+    __table_args__ = (
+        UniqueConstraint("content_type", "content_id", name="uq_community_content_author"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    content_type: Mapped[str] = mapped_column(String(16), index=True)  # post | reply
+    content_id: Mapped[str] = mapped_column(String(36), index=True)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("app_users.id"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class CommunityAttachment(Base):
+    __tablename__ = "community_attachments"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    post_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("community_posts.id"), nullable=True, index=True)
+    reply_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("community_replies.id"), nullable=True, index=True)
+    file_url: Mapped[str] = mapped_column(String(500))
+    file_name: Mapped[str] = mapped_column(String(255))
+    mime_type: Mapped[str] = mapped_column(String(120))
+    size_bytes: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "post_id": self.post_id,
+            "reply_id": self.reply_id,
+            "file_url": self.file_url,
+            "file_name": self.file_name,
+            "mime_type": self.mime_type,
+            "size_bytes": self.size_bytes,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 

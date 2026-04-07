@@ -4,12 +4,14 @@ Thin async Redis wrapper. Falls back gracefully if Redis is unavailable.
 """
 import json
 import logging
+import time
 from typing import Any, Optional
 import redis.asyncio as aioredis
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
 _redis: Optional[aioredis.Redis] = None
+_memory_cache: dict[str, tuple[float, Any]] = {}
 
 
 async def get_redis() -> Optional[aioredis.Redis]:
@@ -28,7 +30,14 @@ async def get_redis() -> Optional[aioredis.Redis]:
 async def cache_get(key: str) -> Optional[Any]:
     r = await get_redis()
     if r is None:
-        return None
+        item = _memory_cache.get(key)
+        if not item:
+            return None
+        expires_at, value = item
+        if expires_at < time.time():
+            _memory_cache.pop(key, None)
+            return None
+        return value
     try:
         raw = await r.get(key)
         return json.loads(raw) if raw else None
@@ -39,10 +48,16 @@ async def cache_get(key: str) -> Optional[Any]:
 
 async def cache_set(key: str, value: Any, ttl: Optional[int] = None) -> None:
     r = await get_redis()
-    if r is None:
-        return
     settings = get_settings()
     ttl = ttl or settings.cache_ttl_seconds
+    if r is None:
+        # Fast local fallback when Redis is unavailable.
+        _memory_cache[key] = (time.time() + ttl, value)
+        # Keep map bounded.
+        if len(_memory_cache) > 300:
+            for k in list(_memory_cache.keys())[:80]:
+                _memory_cache.pop(k, None)
+        return
     try:
         await r.setex(key, ttl, json.dumps(value))
     except Exception as e:
@@ -51,6 +66,7 @@ async def cache_set(key: str, value: Any, ttl: Optional[int] = None) -> None:
 
 async def cache_delete(key: str) -> None:
     r = await get_redis()
+    _memory_cache.pop(key, None)
     if r is None:
         return
     try:

@@ -14,6 +14,31 @@ class SkylandAdapter(BaseRetailerAdapter):
     retailer_id = "skyland"
     shop_name   = "Skyland"
     base_url    = "https://www.skyland.com.bd"
+    _CATEGORY_PATHS = {
+        "cpu": "/processor",
+        "cooler": "/cpu-cooler",
+        "motherboard": "/motherboard",
+        "gpu": "/graphics-card",
+        "ram": "/desktop-ram",
+        "ssd": "/ssd",
+        "psu": "/power-supply",
+        "case": "/casing",
+        "storage": "/ssd",
+    }
+
+    async def search_category_page(self, category: str, query: str, page: int) -> list[ProductResult]:
+        path = self._CATEGORY_PATHS.get((category or "").lower())
+        if not path or page < 1:
+            return await self.search_page(query, page)
+        try:
+            params = {"page": page} if page > 1 else None
+            resp = await self.client.get(f"{self.base_url}{path}", params=params)
+            resp.raise_for_status()
+        except Exception:
+            return []
+        soup = BeautifulSoup(resp.text, "lxml")
+        rows = [p for card in soup.select("div.product-thumb") if (p := self._parse(card)) is not None]
+        return [r for r in rows if self._matches_query(r.title, query)]
 
     async def search_page(self, query: str, page: int) -> list[ProductResult]:
         if page < 1:

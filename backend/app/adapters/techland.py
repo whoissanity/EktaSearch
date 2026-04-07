@@ -14,6 +14,32 @@ class TechLandAdapter(BaseRetailerAdapter):
     retailer_id = "techland"
     shop_name   = "Tech Land BD"
     base_url    = "https://www.techlandbd.com"
+    _CATEGORY_PATHS = {
+        "cpu": "/pc-components/processor",
+        "cooler": "/pc-components/cpu-cooler",
+        "motherboard": "/pc-components/motherboard",
+        "gpu": "/pc-components/graphics-card",
+        "ram": "/pc-components/computer-ram",
+        "ssd": "/pc-components/solid-state-drive",
+        "psu": "/pc-components/power-supply",
+        "case": "/pc-components/computer-casing",
+        "storage": "/pc-components/solid-state-drive",
+    }
+
+    async def search_category_page(self, category: str, query: str, page: int) -> list[ProductResult]:
+        path = self._CATEGORY_PATHS.get((category or "").lower())
+        if not path or page < 1:
+            return await self.search_page(query, page)
+        try:
+            params = {"page": page} if page > 1 else None
+            resp = await self.client.get(f"{self.base_url}{path}", params=params)
+            resp.raise_for_status()
+        except Exception:
+            return []
+        soup = BeautifulSoup(resp.text, "lxml")
+        cards = soup.select("div.h-full > div.bg-white")
+        rows = [p for card in cards if (p := self._parse(card)) is not None]
+        return [r for r in rows if self._matches_query(r.title, query)]
 
     async def search_page(self, query: str, page: int) -> list[ProductResult]:
         if page < 1:

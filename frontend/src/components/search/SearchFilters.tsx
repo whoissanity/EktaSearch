@@ -31,10 +31,10 @@ export default function SearchFilters() {
         <div className="flex gap-2">
           <input type="number" className="input text-sm" placeholder="Min"
             value={filters.min_price ?? ""}
-            onChange={(e) => apply({ min_price: e.target.value ? +e.target.value : undefined })} />
+            onChange={(e) => apply({ min_price: e.target.value === "" ? undefined : Number(e.target.value) })} />
           <input type="number" className="input text-sm" placeholder="Max"
             value={filters.max_price ?? ""}
-            onChange={(e) => apply({ max_price: e.target.value ? +e.target.value : undefined })} />
+            onChange={(e) => apply({ max_price: e.target.value === "" ? undefined : Number(e.target.value) })} />
         </div>
       </div>
 

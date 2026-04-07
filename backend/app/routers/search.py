@@ -5,7 +5,7 @@ GET /api/search/stream — NDJSON progressive chunks
 """
 from typing import Optional
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
 from app.models.product import SearchResponse
@@ -39,7 +39,7 @@ def _params(
 
 @router.get("", response_model=SearchResponse)
 async def search(
-    q: str = Query(..., min_length=2),
+    q: str = Query(""),
     sort_by: str = Query("relevance"),
     in_stock_only: bool = Query(False),
     min_price: Optional[float] = Query(None, ge=0),
@@ -50,6 +50,8 @@ async def search(
         description="cpu, gpu, motherboard, ram, storage, psu, case, cooler",
     ),
 ):
+    if not q.strip() and not (category or "").strip():
+        raise HTTPException(400, "q or category is required")
     return await search_all(
         _params(q, sort_by, in_stock_only, min_price, max_price, retailers, category)
     )
@@ -57,7 +59,7 @@ async def search(
 
 @router.get("/stream")
 async def search_ndjson_stream(
-    q: str = Query(..., min_length=2),
+    q: str = Query(""),
     sort_by: str = Query("relevance"),
     in_stock_only: bool = Query(False),
     min_price: Optional[float] = Query(None, ge=0),
@@ -65,6 +67,8 @@ async def search_ndjson_stream(
     retailers: Optional[str] = Query(None),
     category: Optional[str] = Query(None),
 ):
+    if not q.strip() and not (category or "").strip():
+        raise HTTPException(400, "q or category is required")
     p = _params(q, sort_by, in_stock_only, min_price, max_price, retailers, category)
     return StreamingResponse(
         search_stream(p),

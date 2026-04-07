@@ -3,17 +3,21 @@ app/main.py  —  FastAPI app factory.
 Run with: uvicorn app.main:app --reload
 """
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import get_settings
 from app.core.http import close_http_client, init_http_client
 from app.db.database import init_db
-from app.routers import search, compare, builder, cart, community
+from app.routers import search, compare, builder, cart, community, auth
 from app.db import models as _db_models  # noqa: F401 — register ORM tables
 
 settings = get_settings()
+UPLOADS_DIR = Path(__file__).resolve().parents[2] / "uploads"
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @asynccontextmanager
@@ -45,6 +49,8 @@ def create_app() -> FastAPI:
     app.include_router(builder.router, prefix="/api/builder", tags=["Builder"])
     app.include_router(cart.router,       prefix="/api/cart",       tags=["Cart"])
     app.include_router(community.router,  prefix="/api/community",  tags=["Community"])
+    app.include_router(auth.router,       prefix="/api/auth",       tags=["Auth"])
+    app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
     @app.get("/api/health")
     async def health():

@@ -16,6 +16,27 @@ class TechDiversityAdapter(BaseRetailerAdapter):
     retailer_id = "techdiversity"
     shop_name   = "Tech Diversity BD"
     base_url    = "https://techdiversitybd.com"
+    _CATEGORY_PATHS = {
+        "cpu": "/product-category/pc-components/processor",
+        "motherboard": "/product-category/pc-components/motherboard",
+        "gpu": "/product-category/pc-components/graphics-card",
+        "ram": "/product-category/pc-components/ram",
+        "case": "/product-category/pc-components/casing",
+    }
+
+    async def search_category_page(self, category: str, query: str, page: int) -> list[ProductResult]:
+        path = self._CATEGORY_PATHS.get((category or "").lower())
+        if not path or page < 1:
+            return await self.search_page(query, page)
+        try:
+            url = f"{self.base_url}{path}" if page == 1 else f"{self.base_url}{path}/page/{page}"
+            resp = await self.client.get(url)
+            resp.raise_for_status()
+        except Exception:
+            return []
+        soup = BeautifulSoup(resp.text, "lxml")
+        rows = [p for card in soup.select("div.product-wrapper") if (p := self._parse(card)) is not None]
+        return [r for r in rows if self._matches_query(r.title, query)]
 
     async def search_page(self, query: str, page: int) -> list[ProductResult]:
         if page < 1:

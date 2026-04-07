@@ -13,14 +13,24 @@ interface Props {
 }
 
 const SLOT_HINT: Partial<Record<BuildSlot, string>> = {
-  cpu: "processor",
-  gpu: "graphics card",
-  motherboard: "motherboard",
-  ram: "DDR5 RAM",
-  storage: "SSD NVMe",
-  psu: "power supply",
-  case: "ATX case",
-  cooler: "CPU cooler",
+  cpu: "",
+  gpu: "",
+  motherboard: "",
+  ram: "",
+  storage: "",
+  psu: "",
+  case: "",
+  cooler: "",
+};
+const SLOT_EXAMPLE: Record<BuildSlot, string> = {
+  cpu: "e.g. 7600X",
+  gpu: "e.g. 4070 Ti",
+  motherboard: "e.g. B650",
+  ram: "e.g. DDR5 16GB",
+  storage: "e.g. NVMe SSD or HDD",
+  psu: "e.g. 750W Gold",
+  case: "e.g. ATX case",
+  cooler: "e.g. AK400",
 };
 
 export default function PartPickerModal({ slot, onClose }: Props) {
@@ -37,7 +47,7 @@ export default function PartPickerModal({ slot, onClose }: Props) {
     setLoading(true);
     try {
       const res = await searchProducts({ q, category: slot });
-      setResults(res.results.slice(0, 24));
+      setResults(res.results);
     } finally {
       setLoading(false);
     }
@@ -62,10 +72,7 @@ export default function PartPickerModal({ slot, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-night-950/70 backdrop-blur-sm" onClick={onClose} />
-      <div
-        className="relative glass-panel rounded-2xl w-full max-w-lg
-                      flex flex-col max-h-[82vh] overflow-hidden"
-      >
+      <div className="relative glass-panel rounded-2xl w-full max-w-6xl flex flex-col max-h-[90vh] overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.08]">
           <h3 className="text-sm font-semibold text-zinc-100">Choose {SLOT_LABELS[slot]}</h3>
           <button onClick={onClose} className="btn-ghost p-1">
@@ -79,14 +86,14 @@ export default function PartPickerModal({ slot, onClose }: Props) {
             <input
               autoFocus
               className="input pl-9 text-sm"
-              placeholder={`Search ${SLOT_LABELS[slot].toLowerCase()}…`}
+              placeholder={`Search ${SLOT_LABELS[slot].toLowerCase()} (${SLOT_EXAMPLE[slot]})`}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
         </div>
 
-        <div className="overflow-y-auto flex-1 px-4 py-2 space-y-2">
+        <div className="overflow-y-auto flex-1 px-4 py-2">
           {loading && (
             <div className="flex justify-center py-8 text-zinc-600">
               <Loader size={20} className="animate-spin" />
@@ -95,8 +102,9 @@ export default function PartPickerModal({ slot, onClose }: Props) {
           {!loading && query && results.length === 0 && (
             <p className="text-sm text-zinc-500 text-center py-8">No results.</p>
           )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {results.map((r, i) => (
-            <div key={i} className="card-flat p-3 flex items-center gap-3">
+            <div key={i} className="card-flat p-3 flex items-center gap-3 min-h-[96px]">
               {r.image && (
                 <img
                   src={r.image}
@@ -120,6 +128,7 @@ export default function PartPickerModal({ slot, onClose }: Props) {
               </div>
             </div>
           ))}
+          </div>
         </div>
       </div>
     </div>
