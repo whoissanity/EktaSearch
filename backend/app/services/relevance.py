@@ -32,6 +32,13 @@ def _numeric_tokens(s: str) -> set[str]:
     return set(re.findall(r"\d{3,5}", s))
 
 
+def _spec_tokens(s: str) -> set[str]:
+    # Spec-aware features: capacities/speeds/generation hints.
+    caps = re.findall(r"\b\d+\s?(gb|tb|mhz|w)\b", s.lower())
+    gens = re.findall(r"\b(ddr\d|gen\s?\d|pcie\s?\d)\b", s.lower())
+    return set(caps + gens)
+
+
 def relevance_score(query: str, title: str, description: Optional[str] = None) -> float:
     """Higher = better match. Safe to call per product (e.g. streaming chunks)."""
     q_raw = query.strip()
@@ -70,6 +77,16 @@ def relevance_score(query: str, title: str, description: Optional[str] = None) -
             score += 25.0
         elif num in desc_n:
             score += 8.0
+
+    q_specs = _spec_tokens(q_raw)
+    if q_specs:
+        t_specs = _spec_tokens(title_n)
+        d_specs = _spec_tokens(desc_n)
+        for sp in q_specs:
+            if sp in t_specs:
+                score += 8.0
+            elif sp in d_specs:
+                score += 3.0
 
     if _GPUISH.search(q_raw) and _PERIPHERAL.search(title) and not _GPUISH.search(title):
         score -= 45.0

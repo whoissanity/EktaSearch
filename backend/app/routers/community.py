@@ -491,3 +491,19 @@ async def community_meta():
         "topics": sorted(TOPICS),
         "retailers": sorted(RETAILER_IDS),
     }
+
+
+@router.delete("/moderate/posts/{post_id}")
+async def moderate_delete_post(
+    post_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[AppUser] = Depends(get_current_user_optional),
+):
+    if current_user is None or current_user.email.lower() != OWNER_EMAIL:
+        raise HTTPException(403, "owner only")
+    row = await db.get(CommunityPost, post_id)
+    if row is None:
+        raise HTTPException(404, "post not found")
+    await db.delete(row)
+    await db.commit()
+    return {"ok": True}

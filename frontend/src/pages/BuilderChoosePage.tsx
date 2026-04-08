@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Loader, Search } from "lucide-react";
-import { searchProducts } from "../services/api";
-import type { BuildSlot, ProductResult } from "../types";
+import { searchProductsStream } from "../services/api";
+import type { BuildSlot, ProductResult, SearchFilters } from "../types";
 import { COMPONENT_ID_SLOT, SLOT_LABELS } from "../types";
-import { formatBDT, debounce } from "../utils";
+import { formatBDT } from "../utils";
 import { useBuilderStore } from "../store/builderStore";
 
 const SLOT_EXAMPLE: Record<BuildSlot, string> = {
@@ -27,23 +27,37 @@ export default function BuilderChoosePage() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ProductResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [filters, setFilters] = useState<SearchFilters>({
+    sort_by: "relevance",
+    min_price: undefined,
+    max_price: undefined,
+    in_stock_only: false,
+  });
+  const abortRef = useRef<AbortController | null>(null);
 
   const title = useMemo(() => (slot ? SLOT_LABELS[slot] : "Component"), [slot]);
 
-  const runSearch = debounce(async (q: string, s: BuildSlot) => {
-    setLoading(true);
-    try {
-      const res = await searchProducts({ q, category: s });
-      setResults(res.results);
-    } finally {
-      setLoading(false);
-    }
-  }, 250);
-
   useEffect(() => {
     if (!slot) return;
-    runSearch(query, slot);
-  }, [query, slot]);
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+    setLoading(true);
+    void searchProductsStream(
+      { q: query, category: slot, sort_by: filters.sort_by ?? "relevance", min_price: filters.min_price, max_price: filters.max_price, in_stock_only: !!filters.in_stock_only },
+      filters,
+      {
+        signal: ac.signal,
+        onChunk: (items) => setResults(items),
+      }
+    )
+      .then((items) => setResults(items))
+      .catch(() => {})
+      .finally(() => {
+        if (!ac.signal.aborted) setLoading(false);
+      });
+    return () => ac.abort();
+  }, [query, slot, filters.sort_by, filters.min_price, filters.max_price, filters.in_stock_only]);
 
   if (!slot) {
     return (
@@ -76,11 +90,69 @@ export default function BuilderChoosePage() {
           onChange={(e) => setQuery(e.target.value)}
         />
       </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4">
+        <select
+          className="input text-sm"
+          value={filters.sort_by ?? "relevance"}
+          onChange={(e) =>
+            setFilters((s) => ({
+              ...s,
+              sort_by: e.target.value as "relevance" | "price_asc" | "price_desc",
+            }))
+          }
+        >
+          <option value="relevance">Relevance</option>
+          <option value="price_asc">Price: Low to High</option>
+          <option value="price_desc">Price: High to Low</option>
+        </select>
+        <input
+          type="number"
+          className="input text-sm"
+          placeholder="Min price"
+          value={filters.min_price ?? ""}
+          onChange={(e) =>
+            setFilters((s) => ({
+              ...s,
+              min_price: e.target.value === "" ? undefined : Number(e.target.value),
+            }))
+          }
+        />
+        <input
+          type="number"
+          className="input text-sm"
+          placeholder="Max price"
+          value={filters.max_price ?? ""}
+          onChange={(e) =>
+            setFilters((s) => ({
+              ...s,
+              max_price: e.target.value === "" ? undefined : Number(e.target.value),
+            }))
+          }
+        />
+        <label className="flex items-center gap-2 px-3 rounded-lg border border-white/[0.12] text-sm text-zinc-300">
+          <input
+            type="checkbox"
+            checked={!!filters.in_stock_only}
+            onChange={(e) =>
+              setFilters((s) => ({
+                ...s,
+                in_stock_only: e.target.checked,
+              }))
+            }
+          />
+          In stock only
+        </label>
+      </div>
 
-      {loading && (
+      {loading && results.length === 0 && (
         <div className="flex justify-center py-8 text-zinc-600">
           <Loader size={20} className="animate-spin" />
         </div>
+      )}
+      {loading && results.length > 0 && (
+        <p className="text-xs text-zinc-500 mb-2 flex items-center gap-2">
+          <Loader size={12} className="animate-spin" /> Loading more pages/shops...
+        </p>
       )}
 
       {!loading && results.length === 0 && (

@@ -8,6 +8,7 @@ import time
 from typing import Any, Optional
 import redis.asyncio as aioredis
 from app.core.config import get_settings
+from app.services.observability import record_cache
 
 logger = logging.getLogger(__name__)
 _redis: Optional[aioredis.Redis] = None
@@ -32,17 +33,23 @@ async def cache_get(key: str) -> Optional[Any]:
     if r is None:
         item = _memory_cache.get(key)
         if not item:
+            record_cache(False)
             return None
         expires_at, value = item
         if expires_at < time.time():
             _memory_cache.pop(key, None)
+            record_cache(False)
             return None
+        record_cache(True)
         return value
     try:
         raw = await r.get(key)
+        hit = bool(raw)
+        record_cache(hit)
         return json.loads(raw) if raw else None
     except Exception as e:
         logger.debug("Cache get error: %s", e)
+        record_cache(False)
         return None
 
 

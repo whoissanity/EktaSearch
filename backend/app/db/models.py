@@ -177,3 +177,16 @@ class ProductCacheEntry(Base):
     data_json: Mapped[str] = mapped_column(Text)
     expires_at: Mapped[datetime] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class IndexedProduct(Base):
+    __tablename__ = "indexed_products"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    site: Mapped[str] = mapped_column(String(64), index=True)
+    category_url: Mapped[str] = mapped_column(String(600), index=True)
+    title: Mapped[str] = mapped_column(String(600), index=True)
+    title_lc: Mapped[str] = mapped_column(String(600), index=True)
+    price: Mapped[float] = mapped_column(Float, default=0.0, index=True)
+    link: Mapped[str] = mapped_column(String(800), unique=True, index=True)
+    scraped_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)

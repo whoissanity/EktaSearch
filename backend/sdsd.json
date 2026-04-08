@@ -1,0 +1,127 @@
+"blisstronics": {
+  "base": "https://blisstronics.com/product-category",
+  "categories": {
+    "pc_components": [
+      "/pc-components/processor",
+      "/pc-components/motherboard",
+      "/pc-components/graphics-card",
+      "/pc-components/ram",
+      "/pc-components/power-supply",
+      "/pc-components/casing",
+      "/pc-components/cpu-cooler",
+      "/pc-components/ssd",
+      "/pc-components/hard-disk-drive",
+      "/pc-components/sound-card"
+    ],
+    "peripherals": [
+      "/peripherals/keyboard",
+      "/peripherals/mouse",
+      "/peripherals/mouse-pad",
+      "/peripherals/headphone",
+      "/peripherals/speaker",
+      "/peripherals/webcam",
+      "/peripherals/ups"
+    ],
+    "monitor": [
+      "/monitor",
+      "/monitor/gaming-monitor",
+      "/monitor/budget-monitor"
+    ],
+    "laptop_n_tab": [
+      "/laptop",
+      "/laptop/gaming-laptop",
+      "/laptop/ultrabook",
+      "/tablet"
+    ],
+    "gaming_gear": [
+      "/gaming-gear/gaming-chair",
+      "/gaming-gear/gaming-desk",
+      "/gaming-gear/gamepad-controller",
+      "/gaming-gear/gaming-console"
+    ],
+    "storage": [
+      "/storage/pen-drive",
+      "/storage/external-ssd",
+      "/storage/external-hdd",
+      "/storage/memory-card"
+    ],
+    "networking": [
+      "/networking/router",
+      "/networking/network-switch",
+      "/networking/lan-card",
+      "/networking/access-point"
+    ],
+    "gadgets": [
+      "/gadgets/smart-watch",
+      "/gadgets/earbuds-tws",
+      "/gadgets/power-bank"
+    ],
+    "office_equipment": [
+      "/office-equipment/printer",
+      "/office-equipment/scanner",
+      "/office-equipment/projector",
+      "/office-equipment/toner-cartridge"
+    ]
+  }
+}
+
+{
+  "startech": {
+    "base": "https://www.startech.com.bd",
+    "categories": {
+      "desktop": ["/intel-pc", "/ryzen-pc", "/gaming-pc", "/brand-pc", "/all-in-one-pc"],
+      "laptop": ["/gaming-laptop", "/all-laptop", "/premium-ultrabook", "/laptop-ram"],
+      "component": ["/processor", "/motherboard", "/graphics-card", "/ram", "/casing", "/power-supply", "/cooling-fan", "/ssd-msata", "/hard-disk-drive"],
+      "monitor": ["/monitor", "/gaming-monitor"],
+      "networking": ["/network-router", "/network-switch", "/access-point", "/lan-card"],
+      "accessories": ["/keyboard", "/mouse", "/mouse-pad", "/headphone", "/speaker", "/webcam"],
+      "gaming": ["/gaming-chair", "/gaming-desk", "/gaming-console", "/gamepad"]
+    }
+  },
+  "ryans": {
+    "base": "https://www.ryans.com/category",
+    "categories": {
+      "desktop_component": ["-processor", "-motherboard", "-graphics-card", "-desktop-ram", "-casing", "-power-supply", "-cpu-cooler", "-ssd"],
+      "laptops": ["/laptop-all-laptop", "/laptop-gaming-laptop"],
+      "monitors": ["/monitor-all-monitor", "/monitor-gaming-monitor"],
+      "accessories": ["/desktop-accessories-keyboard", "/desktop-accessories-mouse", "/sound-headphone", "/sound-speaker"]
+    }
+  },
+  "techland": {
+    "base": "https://www.techlandbd.com",
+    "categories": {
+      "component": ["/pc-components/processor", "/pc-components/motherboard", "/pc-components/graphics-card", "/pc-components/computer-ram", "/pc-components/solid-state-drive", "/pc-components/power-supply"],
+      "peripherals": ["/gaming-mouse", "/mechanical-keyboard", "/gaming-headset", "/mouse-pad"],
+      "laptop": ["/shop-laptop-notebook", "/gaming-laptop"]
+    }
+  },
+  "skyland": {
+    "base": "https://www.skyland.com.bd",
+    "categories": {
+      "component": ["/processor", "/motherboard", "/graphics-card", "/desktop-ram", "/casing", "/power-supply", "/cpu-cooler", "/ssd"],
+      "monitor": ["/monitor"],
+      "laptop": ["/laptop"]
+    }
+  },
+  "potakait": {
+    "base": "https://potakait.com",
+    "categories": {
+      "component": ["/components/processor", "/components/motherboard", "/components/graphics-card", "/components/ram-desktop", "/components/power-supply", "/components/ssd"],
+      "accessories": ["/accessories/keyboard", "/accessories/mouse", "/accessories/headphone"],
+      "laptop": ["/laptop/all-laptop"]
+    }
+  },
+  "tech_diversity": {
+    "base": "https://techdiversitybd.com/product-category",
+    "categories": {
+      "pc_parts": ["/pc-components/processor", "/pc-components/motherboard", "/pc-components/graphics-card", "/pc-components/ram"],
+      "keyboards": ["/mechanical-keyboard", "/mechanical-keyboard/ajazz-keyboard", "/mechanical-keyboard/keychron-keyboard"]
+    }
+  },
+  "vibe_gaming": {
+    "base": "https://vibegaming.com.bd/product-category",
+    "categories": {
+      "component": ["/component/processor", "/component/motherboard", "/component/graphics-card", "/component/ram-high-speed", "/component/power-supply"],
+      "peripherals": ["/gaming-accessories/gaming-mouse", "/gaming-accessories/keyboard-mouse-combo"]
+    }
+  },

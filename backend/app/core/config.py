@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     search_max_total: int = 200
     # Per-retailer HTML pagination (page 2+); safety cap to avoid unbounded scrapes
     search_max_retailer_pages: int = 60
+    # For category browsing with empty query (PC builder): keep fast and progressive
+    search_browse_max_retailer_pages: int = 3
+    prewarm_enabled: bool = True
+    prewarm_interval_seconds: int = 3600
 
     @property
     def cors_origins_list(self) -> list[str]:

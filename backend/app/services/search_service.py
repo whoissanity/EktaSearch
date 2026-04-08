@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 from dataclasses import dataclass
 from typing import AsyncIterator, Optional
 
@@ -17,6 +18,8 @@ from app.adapters.base import BaseRetailerAdapter
 from app.core.cache import cache_get, cache_set, make_cache_key
 from app.core.config import get_settings
 from app.models.product import ProductResult, SearchResponse
+from app.services.index_store import query_index
+from app.services.observability import record_adapter
 from app.services.relevance import relevance_score
 
 logger = logging.getLogger(__name__)
@@ -76,6 +79,13 @@ def _fetch_cache_key(p: SearchParams) -> str:
     retailers_key = (p.retailers or "").strip().lower() or "all"
     category_key = _normalized_category(p) or "none"
     return make_cache_key("search_fetch", "v4", eff, retailers_key, category_key)
+
+
+def _max_pages_for_request(p: SearchParams, settings) -> int:
+    # Builder browse mode (category selected, empty text query) should be fast.
+    if _normalized_category(p) and not (p.query or "").strip():
+        return settings.search_browse_max_retailer_pages
+    return settings.search_max_retailer_pages
 
 
 def _score_products(user_query: str, items: list[ProductResult]) -> list[ProductResult]:
@@ -145,18 +155,24 @@ async def _safe_search_page(
     timeout: float,
 ) -> list[ProductResult]:
     adapter = adapter_cls()
+    t0 = time.perf_counter()
     try:
         if category:
-            return await asyncio.wait_for(
+            rows = await asyncio.wait_for(
                 adapter.search_category_page(category, fetch_query, page),
                 timeout=timeout,
             )
-        return await asyncio.wait_for(adapter.search_page(fetch_query, page), timeout=timeout)
+        else:
+            rows = await asyncio.wait_for(adapter.search_page(fetch_query, page), timeout=timeout)
+        record_adapter(adapter_cls.retailer_id, (time.perf_counter() - t0) * 1000.0, True)
+        return rows
     except asyncio.TimeoutError:
         logger.warning("[%s] page %s timed out", adapter_cls.shop_name, page)
+        record_adapter(adapter_cls.retailer_id, (time.perf_counter() - t0) * 1000.0, False)
         return []
     except Exception as e:
         logger.warning("[%s] page %s failed: %s", adapter_cls.shop_name, page, e)
+        record_adapter(adapter_cls.retailer_id, (time.perf_counter() - t0) * 1000.0, False)
         return []
 
 
@@ -195,7 +211,7 @@ async def _fetch_merged_scored(p: SearchParams) -> list[ProductResult]:
     adapters = _adapters_for_retailers(p.retailers)
     fetch_q = _effective_fetch_query(p)
     timeout = settings.search_shop_timeout_seconds
-    max_pages = settings.search_max_retailer_pages
+    max_pages = _max_pages_for_request(p, settings)
     per_shop = await asyncio.gather(
         *[_fetch_shop_all_pages(A, fetch_q, _normalized_category(p), timeout, max_pages) for A in adapters]
     )
@@ -211,6 +227,32 @@ async def _fetch_merged_scored(p: SearchParams) -> list[ProductResult]:
 
 async def search_all(p: SearchParams) -> SearchResponse:
     q_display = p.query.strip()
+    if q_display:
+        indexed = await query_index(q_display, limit=250)
+        if indexed:
+            results = [
+                ProductResult(
+                    title=x.title,
+                    price=x.price,
+                    original_price=None,
+                    description=None,
+                    link=x.link,
+                    image=None,
+                    shop_name=x.site,
+                    availability=True,
+                )
+                for x in indexed
+            ]
+            results = _score_products(q_display, results)
+            results = _apply_price_stock_filters(
+                results,
+                in_stock_only=p.in_stock_only,
+                min_price=p.min_price,
+                max_price=p.max_price,
+            )
+            _sort_results(results, p.sort_by)
+            logger.info("Search initiated", extra={"query": q_display, "source": "indexed"})
+            return SearchResponse(query=q_display, total=len(results), results=results)
     ck = _fetch_cache_key(p)
 
     cached = await cache_get(ck)
@@ -257,7 +299,7 @@ async def search_stream(p: SearchParams) -> AsyncIterator[bytes]:
         adapters = _adapters_for_retailers(p.retailers)
         fetch_q = _effective_fetch_query(p)
         timeout = settings.search_shop_timeout_seconds
-        max_pages = settings.search_max_retailer_pages
+        max_pages = _max_pages_for_request(p, settings)
         by_link: dict[str, ProductResult] = {}
 
         def chunk_line(shop_name: str, page_no: int, scored: list[ProductResult]) -> str:
