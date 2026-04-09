@@ -11,7 +11,7 @@ export default function EktaSearchWordmark({ className = "", size = "sm" }: Prop
       : "text-sm font-semibold tracking-tight";
 
   return (
-    <span className={`${scale} ${className}`}>
+    <span className={`${scale} ${className}`} style={{ fontFamily: "var(--font-ekta)" }}>
       <span className="text-white">Ekta</span>
       <span className="text-shine-cyan">Search</span>
     </span>

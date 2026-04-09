@@ -38,7 +38,7 @@ export default {
         warning: "#B8860B",
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ["Architype Stedelijk", "Inter", "system-ui", "sans-serif"],
         mono: ["JetBrains Mono", "monospace"],
       },
       boxShadow: {

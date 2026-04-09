@@ -19,8 +19,7 @@ from app.core.http import close_http_client, init_http_client
 from app.db.database import init_db
 from app.routers import search, compare, builder, cart, community, auth, prewarm, ops
 from app.db import models as _db_models  # noqa: F401 — register ORM tables
-from app.services.prewarm_bot import discover_and_scrape_once, run_prewarm_forever
-from app.services.index_store import rebuild_from_snapshot
+from app.services.prewarm_bot import run_full_scrape_if_stale, run_prewarm_forever
 
 settings = get_settings()
 logging.basicConfig(
@@ -42,14 +41,27 @@ async def lifespan(app: FastAPI):
 
     async def _startup_scrape_job() -> None:
         t0 = time.perf_counter()
-        logger.info("[startup-scrape] begin scraping all shops")
+        logger.info("[startup] ----------------------------------------------------")
+        logger.info("[startup] scrape check started (freshness window: 1 hour)")
         try:
-            snapshot = await discover_and_scrape_once()
-            indexed_count = await rebuild_from_snapshot(snapshot)
+            snapshot = await run_full_scrape_if_stale(max_age_seconds=3600, force=True)
             elapsed = int((time.perf_counter() - t0) * 1000)
-            logger.info("[startup-scrape] done indexed=%s elapsed_ms=%s", indexed_count, elapsed)
+            if snapshot.get("ran", False):
+                logger.info(
+                    "[startup] scrape complete upserted=%s elapsed_ms=%s",
+                    snapshot.get("products_upserted", 0),
+                    elapsed,
+                )
+            else:
+                logger.info(
+                    "[startup] scrape skipped reason=%s elapsed_ms=%s",
+                    snapshot.get("reason", "unknown"),
+                    elapsed,
+                )
         except Exception:
-            logger.exception("[startup-scrape] failed")
+            logger.exception("[startup] scrape failed")
+        finally:
+            logger.info("[startup] ----------------------------------------------------")
 
     startup_scrape_task = asyncio.create_task(_startup_scrape_job())
     if settings.prewarm_enabled:

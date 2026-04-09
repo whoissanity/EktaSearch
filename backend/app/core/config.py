@@ -7,29 +7,21 @@ from functools import lru_cache
 
 
 class Settings(BaseSettings):
-    # Retailer API keys + base URLs
-    ryans_api_key: str = ""
+    # Retailer base URLs (for reference/integrations)
     ryans_api_base: str = "https://www.ryanscomputers.com/api"
 
-    startech_api_key: str = ""
     startech_api_base: str = "https://www.startech.com.bd/api"
 
-    techland_api_key: str = ""
     techland_api_base: str = "https://www.techlandbd.com/api"
 
-    skyland_api_key: str = ""
     skyland_api_base: str = "https://www.skyland.com.bd/api"
 
-    ultra_api_key: str = ""
     ultra_api_base: str = "https://www.ultratech.com.bd/api"
 
-    vibe_api_key: str = ""
     vibe_api_base: str = "https://www.vibegaming.com.bd/api"
 
-    potaka_api_key: str = ""
     potaka_api_base: str = "https://www.potakait.com/api"
 
-    blisstyle_api_key: str = ""
     blisstyle_api_base: str = "https://www.blisstyle.com.bd/api"
 
     # App
@@ -38,6 +30,7 @@ class Settings(BaseSettings):
     cache_ttl_seconds: int = 900
     cors_origins: str = "http://localhost:5173"
     debug: bool = True
+    sql_echo: bool = False
 
     # Search: live scrape tuning (Tier A/B — for Tier C see search_service module docstring)
     search_shop_timeout_seconds: float = 6.0
@@ -49,6 +42,7 @@ class Settings(BaseSettings):
     search_browse_max_retailer_pages: int = 3
     prewarm_enabled: bool = True
     prewarm_interval_seconds: int = 3600
+    scrape_max_pages_per_category: int = 3
 
     @property
     def cors_origins_list(self) -> list[str]:

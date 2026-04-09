@@ -179,14 +179,31 @@ class ProductCacheEntry(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
-class IndexedProduct(Base):
-    __tablename__ = "indexed_products"
+class Category(Base):
+    __tablename__ = "categories"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     site: Mapped[str] = mapped_column(String(64), index=True)
-    category_url: Mapped[str] = mapped_column(String(600), index=True)
+    name: Mapped[str] = mapped_column(String(255))
+    parent_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("categories.id"), nullable=True, index=True)
+    url: Mapped[str] = mapped_column(String(1000), unique=True, index=True)
+
+
+class Product(Base):
+    __tablename__ = "products"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    site: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     title: Mapped[str] = mapped_column(String(600), index=True)
-    title_lc: Mapped[str] = mapped_column(String(600), index=True)
-    price: Mapped[float] = mapped_column(Float, default=0.0, index=True)
-    link: Mapped[str] = mapped_column(String(800), unique=True, index=True)
-    scraped_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
+    brand: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    category: Mapped[str | None] = mapped_column(String(255), index=True, nullable=True)
+    subcategory: Mapped[str | None] = mapped_column(String(255), index=True, nullable=True)
+    price: Mapped[int | None] = mapped_column(Integer, index=True, nullable=True)
+    currency: Mapped[str] = mapped_column(String(16), default="BDT")
+    url: Mapped[str] = mapped_column(String(1000), unique=True, index=True)
+    image: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    in_stock: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    rating: Mapped[float | None] = mapped_column(Float, nullable=True)
+    review_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())

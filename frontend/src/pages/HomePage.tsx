@@ -33,6 +33,7 @@ export default function HomePage() {
         <p
           className="text-zinc-400 text-base sm:text-lg max-w-2xl mx-auto min-h-[4.5rem] sm:min-h-[3.5rem] flex items-center justify-center gap-0.5 px-2 leading-snug"
           aria-live="polite"
+          style={{ fontFamily: "var(--font-ekta)" }}
         >
           <span className="text-zinc-300">{tagline}</span>
           <span
