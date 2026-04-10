@@ -3,10 +3,13 @@ import json
 from dataclasses import dataclass
 from typing import AsyncIterator, Optional
 
+from app.core.cache import cache_get, cache_set, make_cache_key
+from app.core.config import get_settings
 from app.models.product import ProductResult, SearchResponse
 from app.services.product_store import query_products
 from app.services.relevance import relevance_score
 
+settings = get_settings()
 
 
 @dataclass
@@ -67,6 +70,23 @@ def _sort_results(results: list[ProductResult], sort_by: str) -> None:
 
 async def search_all(p: SearchParams) -> SearchResponse:
     q_display = p.query.strip()
+    cache_key = make_cache_key(
+        "search:v1",
+        q_display.lower(),
+        p.sort_by,
+        str(bool(p.in_stock_only)),
+        str(p.min_price),
+        str(p.max_price),
+        (p.retailers or "").lower(),
+        (p.category or "").lower(),
+    )
+    cached = await cache_get(cache_key)
+    if isinstance(cached, dict):
+        try:
+            return SearchResponse(**cached)
+        except Exception:
+            pass
+
     rows = await query_products(
         q_display,
         sort_by=p.sort_by,
@@ -98,8 +118,9 @@ async def search_all(p: SearchParams) -> SearchResponse:
         max_price=p.max_price,
     )
     _sort_results(results, p.sort_by)
-
-    return SearchResponse(query=q_display, total=len(results), results=results)
+    payload = SearchResponse(query=q_display, total=len(results), results=results)
+    await cache_set(cache_key, payload.model_dump(), ttl=settings.search_cache_ttl_seconds)
+    return payload
 
 
 async def search_stream(p: SearchParams) -> AsyncIterator[bytes]:

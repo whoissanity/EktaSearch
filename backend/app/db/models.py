@@ -8,7 +8,7 @@ SQLAlchemy ORM table definitions.
 """
 import json
 from datetime import datetime
-from sqlalchemy import String, Text, Float, DateTime, Integer, func, ForeignKey, UniqueConstraint, Boolean
+from sqlalchemy import String, Text, Float, DateTime, Integer, func, ForeignKey, UniqueConstraint, Boolean, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.database import Base
 
@@ -205,5 +205,6 @@ class Product(Base):
     in_stock: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     rating: Mapped[float | None] = mapped_column(Float, nullable=True)
     review_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    specs: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())

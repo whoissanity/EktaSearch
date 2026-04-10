@@ -8,11 +8,11 @@ GET  /api/builder          — list all saved builds
 DELETE /api/builder/{id}   — delete a build
 """
 import uuid, json
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.db.database import get_db
-from app.db.models import SavedBuild
+from app.db.models import SavedBuild, Product
 from app.models.builder import PCBuild, BuildAnalysis
 from app.services.compatibility import check_compatibility
 from app.services.wattage import calculate_wattage
@@ -47,6 +47,56 @@ async def save_build(build: PCBuild, db: AsyncSession = Depends(get_db)):
         ))
     await db.commit()
     return {"build_id": build_id}
+
+
+@router.get("/compatible")
+async def compatible_parts(
+    cpu_id: int = Query(..., description="Selected CPU product id"),
+    db: AsyncSession = Depends(get_db),
+):
+    cpu = await db.get(Product, cpu_id)
+    if not cpu:
+        raise HTTPException(404, "CPU not found")
+    cpu_specs = cpu.specs or {}
+    cpu_socket = str(cpu_specs.get("socket") or "").upper()
+    cpu_ram_type = str(cpu_specs.get("ram_type") or cpu_specs.get("memory_type") or "").upper()
+
+    # Filter by normalized category names produced during scrape.
+    mobo_stmt = select(Product).where(
+        (Product.category == "Motherboard") | (Product.category == "motherboard")
+    )
+    mobos = list((await db.execute(mobo_stmt)).scalars().all())
+    compatible_mobos = []
+    for m in mobos:
+        ms = m.specs or {}
+        m_socket = str(ms.get("socket") or "").upper()
+        if cpu_socket and m_socket and cpu_socket != m_socket:
+            continue
+        compatible_mobos.append(
+            {"id": m.id, "title": m.title, "price": m.price, "socket": m_socket or None}
+        )
+
+    ram_stmt = select(Product).where((Product.category == "RAM") | (Product.category == "ram"))
+    rams = list((await db.execute(ram_stmt)).scalars().all())
+    compatible_rams = []
+    for r in rams:
+        rs = r.specs or {}
+        r_type = str(rs.get("type") or rs.get("ram_type") or "").upper()
+        if cpu_ram_type and r_type and cpu_ram_type != r_type:
+            continue
+        compatible_rams.append(
+            {"id": r.id, "title": r.title, "price": r.price, "ram_type": r_type or None}
+        )
+
+    return {
+        "cpu": {"id": cpu.id, "title": cpu.title, "socket": cpu_socket or None, "ram_type": cpu_ram_type or None},
+        "compatible_motherboards": compatible_mobos[:500],
+        "compatible_ram": compatible_rams[:500],
+        "rules": [
+            "CPU.socket == Motherboard.socket",
+            "RAM.type == Motherboard.ram_type (best effort from parsed specs)",
+        ],
+    }
 
 
 @router.get("/{build_id}", response_model=PCBuild)

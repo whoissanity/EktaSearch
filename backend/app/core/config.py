@@ -28,8 +28,10 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     database_url: str = "sqlite+aiosqlite:///./pcbd.db"
     cache_ttl_seconds: int = 900
+    search_cache_ttl_seconds: int = 120
+    category_tree_cache_ttl_seconds: int = 86400
     cors_origins: str = "http://localhost:5173"
-    debug: bool = True
+    debug: bool = False
     sql_echo: bool = False
 
     # Search: live scrape tuning (Tier A/B — for Tier C see search_service module docstring)

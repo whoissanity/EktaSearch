@@ -26,6 +26,18 @@ async def init_db() -> None:
     """Create all tables on startup."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Backward-compatible column add for existing DBs.
+        try:
+            if conn.dialect.name in {"postgresql", "postgres"}:
+                await conn.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS specs JSONB"))
+            else:
+                # SQLite: JSON is stored as TEXT affinity.
+                cols = await conn.execute(text("PRAGMA table_info(products)"))
+                names = {r[1] for r in cols.fetchall()}
+                if "specs" not in names:
+                    await conn.execute(text("ALTER TABLE products ADD COLUMN specs JSON"))
+        except Exception:
+            pass
         # Postgres-only full text index for products.title
         if conn.dialect.name in {"postgresql", "postgres"}:
             await conn.execute(

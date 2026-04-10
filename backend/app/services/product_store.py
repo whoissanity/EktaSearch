@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-from sqlalchemy import and_, func, select, text
+from sqlalchemy import and_, desc, func, select
 
 from app.core.config import get_settings
 from app.db.database import AsyncSessionLocal
@@ -31,7 +31,7 @@ async def query_products(
     max_price: Optional[float] = None,
     retailers: Optional[str] = None,
     category: Optional[str] = None,
-    limit: int = 250,
+    limit: int = 20,
 ) -> list[ProductSearchRow]:
     q = (query or "").strip().lower()
     category_filter = (category or "").strip().lower()
@@ -51,27 +51,15 @@ async def query_products(
                 where.append(Product.price >= int(min_price))
             if max_price is not None:
                 where.append(Product.price <= int(max_price))
-            rows = await db.execute(
-                text(
-                    """
-                    SELECT id
-                    FROM products
-                    WHERE to_tsvector('english', coalesce(title, '')) @@ plainto_tsquery('english', :q)
-                    ORDER BY ts_rank_cd(to_tsvector('english', coalesce(title, '')), plainto_tsquery('english', :q)) DESC,
-                             coalesce(price, 999999999) ASC
-                    LIMIT :limit
-                    """
-                ),
-                {"q": q, "limit": limit},
-            )
-            ids = [r[0] for r in rows.fetchall()]
-            if ids:
-                stmt = select(Product).where(Product.id.in_(ids))
-                if where:
-                    stmt = stmt.where(and_(*where))
-                products = list((await db.execute(stmt)).scalars().all())
-                by_id = {p.id: p for p in products}
-                ordered = [by_id[i] for i in ids if i in by_id]
+            qvec = func.plainto_tsquery("english", q)
+            tsv = func.to_tsvector("english", func.coalesce(Product.title, ""))
+            rank = func.ts_rank(tsv, qvec).label("rank")
+            stmt = select(Product, rank).where(tsv.op("@@")(qvec))
+            if where:
+                stmt = stmt.where(and_(*where))
+            stmt = stmt.order_by(desc(rank), Product.price.asc().nullslast()).limit(limit)
+            rows = (await db.execute(stmt)).all()
+            if rows:
                 return [
                     ProductSearchRow(
                         title=p.title,
@@ -81,7 +69,7 @@ async def query_products(
                         site=p.site or "Unknown",
                         in_stock=bool(p.in_stock),
                     )
-                    for p in ordered
+                    for p, _rank in rows
                 ]
 
         stmt = select(Product)

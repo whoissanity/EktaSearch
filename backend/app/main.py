@@ -16,16 +16,14 @@ from fastapi.staticfiles import StaticFiles
 
 from app.core.config import get_settings
 from app.core.http import close_http_client, init_http_client
+from app.core.logger import setup_logging
 from app.db.database import init_db
 from app.routers import search, compare, builder, cart, community, auth, prewarm, ops
 from app.db import models as _db_models  # noqa: F401 — register ORM tables
 from app.services.prewarm_bot import run_full_scrape_if_stale, run_prewarm_forever
 
 settings = get_settings()
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s - %(message)s",
-)
+setup_logging(debug=settings.debug)
 UPLOADS_DIR = Path(__file__).resolve().parents[2] / "uploads"
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 logger = logging.getLogger(__name__)
@@ -44,7 +42,7 @@ async def lifespan(app: FastAPI):
         logger.info("[startup] ----------------------------------------------------")
         logger.info("[startup] scrape check started (freshness window: 1 hour)")
         try:
-            snapshot = await run_full_scrape_if_stale(max_age_seconds=3600, force=True)
+            snapshot = await run_full_scrape_if_stale(max_age_seconds=3600, force=False)
             elapsed = int((time.perf_counter() - t0) * 1000)
             if snapshot.get("ran", False):
                 logger.info(
